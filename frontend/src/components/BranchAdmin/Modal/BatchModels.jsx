@@ -1,0 +1,328 @@
+"use client";
+import { mainRoute } from "@/components/apiroute";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useManagement } from "@/context/ManagementContext";
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
+  // const list = ["navneet", "reddy vanga", "mahommad bin laden"];
+  const router = useRouter();
+
+  const [list, setList] = useState([]);
+  const [bId, setBId] = useState("");
+  useEffect(() => {
+    if (branch?.name) {
+      setBranchName(branch?.name);
+    }
+    if (branch?.code) {
+      setBatchCode(branch.code);
+    }
+    if (branch?.id) {
+      setBId(branch?.id);
+    }
+  }, [branch]);
+
+  // const [branchId,setBranchId] = useState(branch?.id || "")
+  const { fetchBranch } = useManagement();
+
+  const [branchname, setBranchName] = useState("");
+  const [branchAdmin, setBranchAdmin] = useState("");
+  const [batchcode, setBatchCode] = useState("");
+  const [branchId, setBranchId] = useState(null);
+  const [bname, setBname] = useState();
+
+  useEffect(() => {
+    const tok = JSON.parse(localStorage.getItem("user"));
+    const token = tok.data.token;
+    setBname(tok.data.user.branch.name);
+    setBranchId(tok.data.user.branch.id);
+
+    const loadData = async () => {
+      const data = await fetchBranch();
+
+      setList(data);
+    };
+
+    loadData();
+  }, []);
+
+  const addBranch = async () => {
+    try {
+      const tok = JSON.parse(localStorage.getItem("user"));
+      const token = tok.data.token;
+      const { data } = await axios.post(
+        `${mainRoute}/api/batch`,
+        { name: branchname, code: batchcode, branchId: branchId },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success("Batch Created");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    } catch (error) {
+      toast.error("Error creating batch");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    }
+  };
+
+  const assignBranch = async () => {
+    try {
+      const tok = JSON.parse(localStorage.getItem("user"));
+      const token = tok.data.token;
+
+      const { data } = await axios.post(
+        `${mainRoute}/api/users/make-branch-admin`,
+        {
+          name: branchname,
+          code: batchcode,
+          branchId: branchId,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Batch Created");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    } catch (error) {
+      toast.error("Error assigning branch admin");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    }
+  };
+
+  const editBranch = async () => {
+    try {
+      const tokn = JSON.parse(localStorage.getItem("user"));
+      const token = tokn.data.token;
+
+      const { data } = await axios.put(
+        `${mainRoute}/api/batch/${branch.id}`,
+        {
+          name: branchname,
+          code: batchcode,
+          branchId: branchId,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Edited Successfully");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    } catch (error) {
+      toast.error("Error editing batch");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    }
+  };
+
+  const deleteBranch = async () => {
+    try {
+      const tokn = JSON.parse(localStorage.getItem("user"));
+      const token = tokn.data.token;
+
+      const { data } = await axios.delete(`${mainRoute}/api/batch/${bId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success("Deleted Successfully");
+      setOpen(false);
+      // router.refresh();
+      await refetch();
+    } catch (error) {
+      toast.error("Error deleting batch");
+      setOpen(false);
+      await refetch();
+    }
+  };
+
+  return (
+    <>
+      {open && (
+        <div className="h-screen w-full bg-[#d8d3d382] absolute top-0 left-0 flex justify-center items-center ">
+          <div className="h-auto p-5 xl:w-[40vw] bg-white shadow-2xl rounded-2xl  ">
+            <div className="flex justify-end px-5">
+              <span
+                className="cursor-pointer font-bold"
+                onClick={() => setOpen(false)}
+              >
+                x
+              </span>
+            </div>
+            {type === "add" && (
+              <div className=" h-full w-full flex flex-col justify-center px-10 gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
+                <div className="">
+                  <Label htmlFor="branchname">Batch Name</Label>
+                  <Input
+                    id="branchname"
+                    onChange={(e) => setBranchName(e.target.value)}
+                    type={`text`}
+                    placeholder={"Batch Name"}
+                  />
+                </div>
+                <div className="">
+                  <Label htmlFor="batchcode">Batch Code</Label>
+                  <Input
+                    id="batchcode"
+                    onChange={(e) => setBatchCode(e.target.value)}
+                    type={`text`}
+                    placeholder={"Batch Code"}
+                  />
+                </div>
+
+                <div className="">
+                  <Label htmlFor="branchId">Branch</Label>
+                  <Input type={`text`} readOnly value={bname} />
+                </div>
+                {/* <div>
+                  <Label htmlFor="branchadmin">Branch Admin</Label>
+                  <Select onValueChange={(v)=>setBranchAdmin(v)} id="branchadmin">
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder="Branch Admin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {list.map((item, index) => (
+                        <SelectItem value={item.id} key={index}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div> */}
+
+                <Button onClick={addBranch}>Add New Batch</Button>
+              </div>
+            )}
+
+            {type === "assign" && (
+              <div className=" h-full w-full flex flex-col justify-center px-10 gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
+                <div className="">
+                  <Label htmlFor="branchname">Branch Name</Label>
+                  <Input
+                    id="branchname"
+                    type={`text`}
+                    value={branch?.name}
+                    onChange={(e) => setBranchName(e)}
+                    placeholder={"Branch Name"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="branchadmin">Branch Admin</Label>
+                  <Select
+                    onValueChange={(v) => setBranchAdmin(v)}
+                    id="branchadmin"
+                  >
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue
+                        placeholder={branchAdmin || "Branch Admin"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {list.map((item, index) => (
+                        <SelectItem value={item.id} key={index}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button onClick={assignBranch}>Assign Branch Admin</Button>
+              </div>
+            )}
+
+            {type === "edit" && (
+              <div className=" h-full w-full flex flex-col justify-center px-10 gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
+                <div className="">
+                  <Label htmlFor="branchname">Batch Name</Label>
+                  <Input
+                    id="branchname"
+                    onChange={(e) => setBranchName(e.target.value)}
+                    type={`text`}
+                    value={branchname}
+                    placeholder={"Batch Name"}
+                  />
+                </div>
+                <div className="">
+                  <Label htmlFor="batchcode">Batch Code</Label>
+                  <Input
+                    id="batchcode"
+                    value={batchcode}
+                    onChange={(e) => setBatchCode(e.target.value)}
+                    type={`text`}
+                    placeholder={"Batch Code"}
+                  />
+                </div>
+
+                <div className="">
+                  <Label htmlFor="branchId">Branch</Label>
+                  <Input type={`text`} readOnly value={bname} />
+                </div>
+
+                <Button onClick={editBranch}>Edit Batch</Button>
+              </div>
+            )}
+
+            {type === "delete" && (
+              <>
+                <div className="h-full w-full flex flex-col justify-center px-10 gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
+                  <p className="">
+                    You Want To Delete{" "}
+                    <span className="font-bold text-2xl text-red-600">
+                      {branch.name}
+                    </span>{" "}
+                    Batch
+                  </p>
+                  <Button
+                    onClick={deleteBranch}
+                    variant="destructive"
+                    className={`cursor-pointer`}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default BatchModels;

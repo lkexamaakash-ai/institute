@@ -1,0 +1,28 @@
+const express = require("express")
+const router = express.Router();
+
+const lectureController = require("./lectures.controller");
+const { protect } = require("../../middleware/auth.middleware");
+const { requireRole } = require("../../middleware/role.middleware");
+
+
+router.post(
+    "/",
+    protect,
+    requireRole("SUPER_ADMIN","BRANCH_ADMIN"),
+    lectureController.create
+)
+
+router.get("/",protect,lectureController.getAlllectures);
+
+router.get(
+    "/branch/:batchId",
+    protect,
+    lectureController.getByBranchAndDate
+)
+
+router.delete("/:id",protect,lectureController.remove)
+
+router.put("/:id",protect,lectureController.update)
+
+module.exports = router

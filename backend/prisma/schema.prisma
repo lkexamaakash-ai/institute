@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  userId           Int?
+  users            User[]
+  // facultySubjects  FacultySubject[]
+  // lectureSchedules LectureSchedule[]
+  // subjects         Subject[]
+  batches          Batch[]
+  staffAttendances StaffAttendance[]
+
+  createdAt        DateTime          @default(now())
+  // lectureSchedules LectureSchedule[]
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  name           String
+  phoneNumber    String    @unique
+  password       String
+  role           Role
+  salary         Int?
+  shiftStartTime DateTime?
+  shiftEndTime   DateTime?
+
+  branchId Int?
+  branch   Branch? @relation(fields: [branchId], references: [id])
+
+  facultySubjects FacultySubject[]
+  lectures        LectureSchedule[]
+
+  staffAttendances StaffAttendance[]
+
+  createdAt DateTime @default(now())
+}
+
+model Subject {
+  id      Int    @id @default(autoincrement())
+  name    String
+  batchId Int
+  batch   Batch  @relation(fields: [batchId], references: [id])
+
+  facultySubjects  FacultySubject[]
+  lectureSchedules LectureSchedule[]
+
+  @@unique([name, batchId])
+}
+
+model FacultySubject {
+  id Int @id @default(autoincrement())
+
+  facultyId Int
+  subjectId Int
+
+  faculty User    @relation(fields: [facultyId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([facultyId, subjectId])
+}
+
+model LectureSchedule {
+  id Int @id @default(autoincrement())
+
+  facultyId Int
+  subjectId Int
+  batchId   Int
+
+  TotalScheduled Int?
+
+  StartDate DateTime
+  EndDate   DateTime
+  startTime DateTime
+  endTime   DateTime
+
+  faculty User    @relation(fields: [facultyId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+  batch   Batch   @relation(fields: [batchId], references: [id])
+
+  attendance LectureAttendance[]
+
+  createdAt DateTime @default(now())
+}
+
+model LectureAttendance {
+  id Int @id @default(autoincrement())
+
+  lectureId       Int
+  date            DateTime    @default(now())
+  actualStartTime DateTime
+  actualEndTime   DateTime
+  status          StatusType  @default(CONDUCTED)
+  payout          Int         @default(0)
+  penalty         PenaltyType @default(NONE)
+
+  lecture LectureSchedule @relation(fields: [lectureId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([lectureId, date])
+}
+
+model StaffAttendance {
+  id Int @id @default(autoincrement())
+
+  staffId Int
+  staff   User @relation(fields: [staffId], references: [id])
+
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
+
+  date           DateTime
+  shiftStartTime DateTime
+  shiftEndTime   DateTime
+
+  actualInTime  DateTime
+  actualOutTime DateTime?
+
+  isLate Boolean @default(false)
+
+  overtimeMinutes Int @default(0)
+  overtimePay     Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([staffId, date])
+}
+
+model Batch {
+  id   Int     @id @default(autoincrement())
+  name String
+  code String?
+
+  branchId Int
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  subjects Subject[]
+
+  createdAt        DateTime          @default(now())
+  lectureSchedules LectureSchedule[]
+
+  @@unique([name, branchId])
+}
+
+enum PenaltyType {
+  NONE
+  LATE_START
+  EARLY_END
+  BOTH
+}
+
+enum StatusType {
+  CONDUCTED
+  CANCELLED
+  MISSED
+}
+
+enum Role {
+  SUPER_ADMIN
+  BRANCH_ADMIN
+  FACULTY
+  STAFF
+}
