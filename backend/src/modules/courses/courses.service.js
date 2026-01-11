@@ -10,7 +10,11 @@ const getAll = async() =>{
     return await prisma.course.findMany({
         orderBy:{createdAt:'desc'},
         include:{
-            branch:true,
+            branch:{
+                include:{
+                    users:true
+                }
+            },
             batches:true
         }
     })

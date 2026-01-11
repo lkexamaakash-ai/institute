@@ -10,63 +10,6 @@ import { mainRoute } from "../apiroute";
 const LectureManagement = () => {
   const [open,setOpen] = useState(false)
   const [type,setType] = useState("")
-  // const lectureData = [
-  //   {
-  //     sno: 1,
-  //     date: "06-Jan-2025",
-  //     subject: "Mathematics",
-  //     faculty: "Rahul Mehta",
-  //     branch: "Delhi Branch",
-  //     startTime: "10:00 AM",
-  //     endTime: "11:00 AM",
-  //     status: "Conducted",
-  //     penalty: "None",
-  //   },
-  //   {
-  //     sno: 2,
-  //     date: "06-Jan-2025",
-  //     subject: "Physics",
-  //     faculty: "Ankit Verma",
-  //     branch: "Delhi Branch",
-  //     startTime: "11:00 AM",
-  //     endTime: "12:00 PM",
-  //     status: "Conducted",
-  //     penalty: "Late Start",
-  //   },
-  //   {
-  //     sno: 3,
-  //     date: "06-Jan-2025",
-  //     subject: "Chemistry",
-  //     faculty: "Neha Sharma",
-  //     branch: "Mumbai Branch",
-  //     startTime: "09:30 AM",
-  //     endTime: "10:30 AM",
-  //     status: "Conducted",
-  //     penalty: "Early End",
-  //   },
-  //   {
-  //     sno: 4,
-  //     date: "07-Jan-2025",
-  //     subject: "Computer Science",
-  //     faculty: "Rohit Kumar",
-  //     branch: "Delhi Branch",
-  //     startTime: "02:00 PM",
-  //     endTime: "03:00 PM",
-  //     status: "Planned",
-  //     penalty: "-",
-  //   },
-  //   {
-  //     sno: 5,
-  //     date: "07-Jan-2025",
-  //     subject: "English",
-  //     faculty: "Priya Nair",
-  //     branch: "Ahmedabad Branch",
-  //     startTime: "01:00 PM",
-  //     endTime: "02:00 PM",
-  //     status: "Missed",
-  //     penalty: "Both",
-  //   },
-  // ];
 
   const [lectureData,setLectureData] = useState([])
 
@@ -85,7 +28,6 @@ const LectureManagement = () => {
       }
     })
 
-
     setLectureData(data.data)
 
   }
@@ -96,12 +38,12 @@ const LectureManagement = () => {
   },[])
 
   const lists = [
-    "S.No",
     "Start Date",
     "End Date",
     "Subject",
     "Faculty",
     "Batch",
+    "Course",
     "Branch",
     "Start Time",
     "End Time",
@@ -144,13 +86,14 @@ const LectureManagement = () => {
               key={index}
               className="grid  grid-cols-[60px_180px_260px_220px_140px_140px_120px_100px_100px] xl:grid-cols-10 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center hover:bg-gray-50"
             >
-              <li className="font-semibold">{index + 1}</li>
+              {/* <li className="font-semibold">{index + 1}</li> */}
               <li>{lecture.StartDate.split("T")[0]}</li>
               <li>{lecture.EndDate.split("T")[0]}</li>
               <li>{lecture.subject.name}</li>
               <li>{lecture.faculty.name}</li>
               <li>{lecture.batch.name}</li>
-              <li>{lecture.batch.branch.name}</li>
+              <li>{lecture.batch.course.name}</li>
+              <li>{lecture.batch.course.branch.name}</li>
               <li>{formatTime(lecture.startTime)}</li>
               {/* <li>{lecture.endTime.split("T")[1].split(":00")[0]}</li> */}
               <li>{formatTime(lecture.endTime)}</li>

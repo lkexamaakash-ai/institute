@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useManagement } from "@/context/ManagementContext";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -23,6 +24,10 @@ const SubjectModel = ({ open, setOpen, subject, type, refetch }) => {
   const [bran, setBran] = useState("");
   const [bra, setBra] = useState(null);
   const [bat, setBat] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [courseId,setCourseId] = useState(null);
+
+  const {fetchCourse} = useManagement();
   // console.log(subject.branch?.name)
 
   useEffect(() => {
@@ -45,15 +50,14 @@ const SubjectModel = ({ open, setOpen, subject, type, refetch }) => {
         },
       });
 
-      console.log(data?.data);
-      console.log(bran);
-      const filtereddata = data.data.filter((batch) => batch.branchId === bran);
+
+      const filtereddata = data.data.filter((batch) => batch.courseId === courseId);
       console.log(filtereddata);
       setBatch(filtereddata);
     };
 
     fetchBatch();
-  }, [bran]);
+  }, [courseId]);
 
   useEffect(() => {
     let tok = JSON.parse(localStorage.getItem("user"));
@@ -72,6 +76,16 @@ const SubjectModel = ({ open, setOpen, subject, type, refetch }) => {
 
     fetchBranch();
   }, []);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchCourse();
+
+      setCourses(data);
+    };
+
+    loadData();
+  }, [bran]);
 
   const router = useRouter();
 
@@ -106,35 +120,31 @@ const SubjectModel = ({ open, setOpen, subject, type, refetch }) => {
   const handleSubjectEdit = async () => {
     let tok = JSON.parse(localStorage.getItem("user"));
     let token = tok.data.token;
-
-
   };
-
 
   const deleteBranch = async () => {
     try {
-
       let tok = JSON.parse(localStorage.getItem("user"));
       let token = tok.data.token;
       let id = subject.id;
-      
+
       const { data } = await axios.delete(`${mainRoute}/api/subject/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    toast.success("Subject Deleted Successfully");
-    router.refresh();
-    setOpen(false);
-    await refetch();
-  } catch (err) {
-    toast.error("Error in deleting subject");
-    router.refresh();
-    setOpen(false);
-    await refetch();
-  }
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success("Subject Deleted Successfully");
+      router.refresh();
+      setOpen(false);
+      await refetch();
+    } catch (err) {
+      toast.error("Error in deleting subject");
+      router.refresh();
+      setOpen(false);
+      await refetch();
+    }
   };
 
   return (
@@ -171,6 +181,22 @@ const SubjectModel = ({ open, setOpen, subject, type, refetch }) => {
                     </SelectTrigger>
                     <SelectContent>
                       {branch.map((item, i) => (
+                        <SelectItem key={i} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="">
+                  <Label htmlFor="code">Course</Label>
+                  <Select onValueChange={(v) => setCourseId(v)}>
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder={`Course`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((item, i) => (
                         <SelectItem key={i} value={item.id}>
                           {item.name}
                         </SelectItem>

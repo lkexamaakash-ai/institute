@@ -89,19 +89,7 @@ const BatchManagement = () => {
 
                   <li>{branchAdmin ? branchAdmin.name : "-"}</li>
 
-                  {/* <li>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setOpen(true);
-                        setType("assign");
-                        setBran(branche);
-                      }}
-                      className={`scale-[0.6] xl:scale-[1]`}
-                    >
-                      Assign
-                    </Button>
-                  </li> */}
+                  
 
                   <li>
                     <Button
@@ -138,7 +126,9 @@ const BatchManagement = () => {
               );
             })
           ) : (
-            <p className="text-center my-5 text-xl">No Batches</p>
+            <div className="h-[50vh] flex justify-center items-center">
+              <p className="text-center my-5 text-xl">No Users</p>
+            </div>
           )}
         </div>
       </div>

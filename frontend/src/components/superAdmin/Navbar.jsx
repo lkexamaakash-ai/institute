@@ -20,6 +20,11 @@ const Navbar = ({open,setOpen}) => {
       link: "/superadmin/branchmanage",
     },
     {
+      name:"Course Management",
+      icon:"",
+      link: "/superadmin/coursemanage"
+    },
+    {
       name:"Batch Management",
       icon:"",
       link:"/superadmin/batchmanage"

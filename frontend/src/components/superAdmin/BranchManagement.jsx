@@ -22,43 +22,6 @@ const BranchManagement = () => {
     "Delete",
   ];
 
-  // const branches = [
-  //   {
-  //     id: 1,
-  //     branchName: "Delhi",
-  //     totalFaculties: 25,
-  //     totalStaff: 50,
-  //     branchAdmin: "Navneet Shahi",
-  //   },
-  //   {
-  //     id: 2,
-  //     branchName: "Mumbai",
-  //     totalFaculties: 30,
-  //     totalStaff: 62,
-  //     branchAdmin: "Rohit Verma",
-  //   },
-  //   {
-  //     id: 3,
-  //     branchName: "Bangalore",
-  //     totalFaculties: 28,
-  //     totalStaff: 55,
-  //     branchAdmin: "Ananya Singh",
-  //   },
-  //   {
-  //     id: 4,
-  //     branchName: "Hyderabad",
-  //     totalFaculties: 22,
-  //     totalStaff: 48,
-  //     branchAdmin: "Amit Patel",
-  //   },
-  //   {
-  //     id: 5,
-  //     branchName: "Pune",
-  //     totalFaculties: 20,
-  //     totalStaff: 42,
-  //     branchAdmin: "Sneha Kulkarni",
-  //   },
-  // ];
 
   const [branches, setBranches] = useState([]);
 

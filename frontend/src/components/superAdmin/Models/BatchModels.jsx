@@ -22,8 +22,11 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
 
   const [list, setList] = useState([]);
   const [bId, setBId] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState("");
 
   useEffect(() => {
+    console.log(branch);
     if (branch?.name) {
       setBranchName(branch?.name);
     }
@@ -34,13 +37,16 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
       setBId(branch?.id);
     }
 
-    if (branch?.branch?.id) {
-      setBranchId(branch.branch.id);
+    if (branch?.course?.branch?.id) {
+      setBranchId(branch.course.branch.id);
     }
+    if(branch?.course?.id){
+      setCourseId(branch.course.id)
+    }    
   }, [branch]);
 
   // const [branchId,setBranchId] = useState(branch?.id || "")
-  const { fetchBranch } = useManagement();
+  const { fetchBranch, fetchCourse } = useManagement();
 
   const [branchname, setBranchName] = useState(branch?.name || "");
   const [branchAdmin, setBranchAdmin] = useState(branch?.branchAdmin || "");
@@ -61,13 +67,23 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchCourse();
+
+      setCourses(data);
+    };
+
+    loadData();
+  }, [list]);
+
   const addBranch = async () => {
     try {
       const tok = JSON.parse(localStorage.getItem("user"));
       const token = tok.data.token;
       const { data } = await axios.post(
         `${mainRoute}/api/batch`,
-        { name: branchname, code: batchcode, branchId: branchId },
+        { name: branchname, code: batchcode, courseId: courseId },
         {
           headers: {
             "Content-Type": "application/json",
@@ -77,7 +93,6 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
       );
       toast.success("Batch Created");
       setOpen(false);
-      // router.refresh();
       await refetch();
     } catch (error) {
       toast.error("Error in creating batch");
@@ -97,7 +112,7 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
         {
           name: branchname,
           code: batchcode,
-          branchId: branchId,
+          courseId: courseId,
         },
         {
           headers: {
@@ -223,6 +238,22 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="">
+                  <Label htmlFor="courseId">Course</Label>
+                  <Select onValueChange={(v) => setCourseId(v)} id="courseId">
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder="Course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((item, index) => (
+                        <SelectItem value={item.id} key={index}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {/* <div>
                   <Label htmlFor="branchadmin">Branch Admin</Label>
                   <Select onValueChange={(v)=>setBranchAdmin(v)} id="branchadmin">
@@ -315,6 +346,22 @@ const BatchModels = ({ open, type, setOpen, branch, badmin, refetch }) => {
                     </SelectTrigger>
                     <SelectContent>
                       {list.map((item, index) => (
+                        <SelectItem value={item.id} key={index}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="">
+                  <Label htmlFor="courseId">Course</Label>
+                  <Select value={courseId} onValueChange={(v) => setCourseId(v)} id="courseId">
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder="Course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((item, index) => (
                         <SelectItem value={item.id} key={index}>
                           {item.name}
                         </SelectItem>

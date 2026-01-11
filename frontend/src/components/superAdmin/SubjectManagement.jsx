@@ -13,53 +13,11 @@ const SubjectManagement = () => {
   const [type, setType] = useState(false);
   const [subjec, setSubject] = useState({});
 
-  //   const subjectData = [
-  //   {
-  //     sno: 1,
-  //     subjectName: "Mathematics",
-  //     subjectCode: "MTH101",
-  //     assignedFaculty: ["Rahul Mehta", "Pooja Singh"],
-  //     noOfLectures: 18,
-  //     totalLectures: 24,
-  //   },
-  //   {
-  //     sno: 2,
-  //     subjectName: "Physics",
-  //     subjectCode: "PHY102",
-  //     assignedFaculty: ["Ankit Verma"],
-  //     noOfLectures: 20,
-  //     totalLectures: 26,
-  //   },
-  //   {
-  //     sno: 3,
-  //     subjectName: "Chemistry",
-  //     subjectCode: "CHE103",
-  //     assignedFaculty: ["Neha Sharma", "Amit Joshi"],
-  //     noOfLectures: 15,
-  //     totalLectures: 22,
-  //   },
-  //   {
-  //     sno: 4,
-  //     subjectName: "Computer Science",
-  //     subjectCode: "CSE104",
-  //     assignedFaculty: ["Rohit Kumar"],
-  //     noOfLectures: 24,
-  //     totalLectures: 30,
-  //   },
-  //   {
-  //     sno: 5,
-  //     subjectName: "English",
-  //     subjectCode: "ENG105",
-  //     assignedFaculty: ["Priya Nair"],
-  //     noOfLectures: 21,
-  //     totalLectures: 25,
-  //   },
-  // ];
-
   const lists = [
     "S.no",
     "Subject Name",
     "Batch",
+    "Course",
     "Branch",
     "Assigned Faculty",
     "No of Lectures",
@@ -100,7 +58,7 @@ const SubjectManagement = () => {
           </Button>
         </div>
         <div className="w-full h-[91%]  overflow-auto">
-          <ul className="grid grid-cols-[60px_120px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 font-bold text-center">
+          <ul className="grid grid-cols-[30px_120px_180px_260px_220px_140px_140px_120px_100px_100px] xl:grid-cols-9 px-4 py-3 xl:border-b xl:border-gray-500 font-bold text-center">
             {lists.map((item, index) => (
               <li key={index}>{item}</li>
             ))}
@@ -109,23 +67,26 @@ const SubjectManagement = () => {
           {subjectData.length > 0 ? subjectData.map((sub, index) => (
             <ul
               key={index}
-              className="grid grid-cols-[60px_120px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-8 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center hover:bg-gray-50"
+              className="grid grid-cols-[30px_120px_180px_260px_220px_140px_140px_120px_100px] xl:grid-cols-9 px-4 py-3 xl:border-b xl:border-gray-500 text-center items-center hover:bg-gray-50"
             >
               <li className="font-semibold">{index + 1}</li>
               <li>{sub.name}</li>
               <li>{sub.batch.name}</li>
-              <li>{sub.batch.branch.name}</li>
+              <li>
+                {sub.batch.course.name}
+              </li>
+              <li>{sub.batch?.course?.branch?.name}</li>
               <li>
                 {sub.facultySubjects.map((fs) => fs.faculty.name).join(",") || "-"}
               </li>
               <li>
-                {sub?.batch.lectureSchedules.reduce(
-                  (count, lec) => count + (lec.attendance ? 1 : 0),
+                {sub?.lectureSchedules.reduce(
+                  (count, lec) => count + (lec.attendance ? lec.attendance.length : 0),
                   0
                 ) || "-"}
               </li>
               <li>
-                {sub?.batch.lectureSchedules.reduce(
+                {sub?.lectureSchedules.reduce(
                   (sum, sublec) => sum + (sublec?.TotalScheduled || 0),
                   0
                 ) || "-"}

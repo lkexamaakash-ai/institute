@@ -21,7 +21,11 @@ const createSubject = async (name, batchId) => {
     include: {
       batch: {
         include: {
-          branch: true,
+          course: {
+            include:{
+              branch:true
+            }
+          },
         },
       },
     },
@@ -34,13 +38,22 @@ const getAllSubjects = async () => {
     include: {
       batch: {
         include: {
-          branch: true,
+          course: {
+            include:{
+              branch:true
+            }
+          },
           lectureSchedules: {
             include: {
               attendance: true,
             },
           },
         },
+      },
+      lectureSchedules:{
+        include:{
+          attendance:true
+        }
       },
       facultySubjects: {
         include: {

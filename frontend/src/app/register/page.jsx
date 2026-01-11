@@ -5,11 +5,15 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { mainRoute } from "@/components/apiroute";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   const router = useRouter();
 
@@ -21,6 +25,7 @@ const Register = () => {
           name,
           phoneNumber,
           password,
+          code
         },
         {
           headers: {
@@ -29,12 +34,18 @@ const Register = () => {
         }
       );
 
-      localStorage.setItem("user", JSON.stringify(data));
+      if(data.success === true){
+        localStorage.setItem("user", JSON.stringify(data));
+        toast.success(data.message)
+        router.push("/");
+      }
+      else{
+        toast.error(data.message)
+      }
 
-      router.push("/");
     } catch (error) {
-      console.error(error);
-      alert(error.response?.data?.message || "Registration failed");
+      console.log(error);
+      toast.error(error.response?.data?.message || "Registration failed")
     }
   };
 
@@ -61,10 +72,23 @@ const Register = () => {
               placeholder={"Enter Your Phone Number"}
               onChange={(e) => setPhoneNumber(e.target.value)}
             />
+            <div className="relative">
+              <Input
+                type={`${showPass?"text":"password"}`}
+                placeholder={"Enter Your Password"}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button
+                onClick={() => setShowPass(!showPass)}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black bg-transparent hover:bg-transparent `}
+              >
+                {!showPass ? <Eye size={10} /> : <EyeOff size={10} />}
+              </Button>
+            </div>
             <Input
-              type={"password"}
-              placeholder={"Enter Your Password"}
-              onChange={(e) => setPassword(e.target.value)}
+              type={"number"}
+              placeholder={"Enter Code"}
+              onChange={(e) => setCode(e.target.value)}
             />
 
             <Button

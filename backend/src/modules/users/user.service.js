@@ -88,7 +88,7 @@ const getAllUser = async () => {
       salary: true,
       facultyType: true,
       lectureRate: true,
-      workingMinutesPerDay:true
+      workingMinutesPerDay: true,
     },
   });
 };
@@ -145,7 +145,8 @@ const updateUser = async (
   branchId,
   salary,
   shiftStartTime,
-  shiftEndTime
+  shiftEndTime,
+  facultyType
 ) => {
   if (role === "STAFF") {
     const today = new Date().toISOString().split("T")[0];
@@ -165,6 +166,24 @@ const updateUser = async (
       },
     });
   } else {
+    if (facultyType === "SALARY_BASED") {
+      const today = new Date().toISOString().split("T")[0];
+
+      const shiftStart = new Date(`${today}T${shiftStartTime}`);
+      const shiftEnd = new Date(`${today}T${shiftEndTime}`);
+      return await prisma.user.update({
+        where: { id },
+        data: {
+          name,
+          phoneNumber,
+          role,
+          branchId: Number(branchId),
+          salary: Number(salary),
+          shiftEndTime: shiftEnd,
+          shiftStartTime: shiftStart,
+        },
+      });
+    }
     return await prisma.user.update({
       where: { id },
       data: {
@@ -172,7 +191,7 @@ const updateUser = async (
         phoneNumber,
         role,
         branchId: Number(branchId),
-        salary: Number(salary),
+        lectureRate: Number(salary),
       },
     });
   }
@@ -193,17 +212,17 @@ const branchDashoard = async () => {
             include: {
               lectureSchedules: {
                 include: {
-                  subject: true
-                }
+                  subject: true,
+                },
               },
             },
           },
         },
       },
       users: {
-        omit:{
-          password:true
-        }
+        omit: {
+          password: true,
+        },
       },
       staffAttendances: true,
     },

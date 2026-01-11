@@ -19,4 +19,10 @@ router.get(
   controller.monthlyReport
 );
 
+router.get(
+  "/report/salary-summary/:staffId",
+  protect,
+  controller.staffSalarySummaryController
+)
+
 module.exports = router;

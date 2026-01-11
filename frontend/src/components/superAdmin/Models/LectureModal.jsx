@@ -15,18 +15,23 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
+const LectureModal = ({ open, setOpen, type, lec, refetch }) => {
   const router = useRouter();
   const isoTo24Hour = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
-    return date.toISOString().slice(11, 16); // HH:mm
+    return date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
 
   const [branch, setBranch] = useState([]);
   const [subject, setSubject] = useState([]);
   const [users, setUsers] = useState([]);
   const [batch, setBatch] = useState([]);
+  const [courses, setCourses] = useState([]);
 
   const [Branc, setBranc] = useState("");
   const [sub, setSub] = useState("");
@@ -39,15 +44,10 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
   const [bat, setBat] = useState("");
 
   const [lectname, setLectname] = useState(null);
-  const [lectSub, setLectSub] = useState(null);
   const [lectfac, setLectfac] = useState(null);
-  const [lectStart, setLectStart] = useState(null);
-  const [lectEnd, setLectEnd] = useState(null);
-  const [lectIn, setLectIn] = useState(null);
-  const [lectOut, setLectOut] = useState(null);
-  const [lectTotal, setLectTotal] = useState(null);
+  const [courseId, setCourseId] = useState(null);
 
-  const { fetchBranch, fetchUser, fetchSubject, fetchLecture } =
+  const { fetchBranch, fetchUser, fetchSubject, fetchLecture, fetchCourse } =
     useManagement();
 
   const toDateInput = (date) =>
@@ -59,15 +59,16 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
       year: "numeric",
     });
   useEffect(() => {
-    console.log(lec)
-    if (lec?.batch?.branch?.id) {
-      console.log(Branc)
+    console.log(lec);
+    if (lec?.batch?.course.branch?.id) {
       setLectname(lec?.batch?.branch?.name);
-      setBranc(lec?.batch?.branch?.id);
-      console.log(Branc)
+      setBranc(lec?.batch?.course.branch?.id);
+    }
+    if (lec?.batch?.course?.id) {
+      setCourseId(lec.batch.course.id);
     }
     if (lec?.subject) {
-      console.log(lec.subject.id)
+      console.log(lec.subject.id);
       setSub(lec.subject.id);
     }
     if (lec?.faculty) {
@@ -86,8 +87,8 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
     if (lec?.endTime) {
       setOuttime(isoTo24Hour(lec?.endTime));
     }
-    if(lec?.batch){
-      setBat(lec.batch.id)
+    if (lec?.batch) {
+      setBat(lec.batch.id);
     }
     if (lec?.TotalScheduled) {
       setTotalLecture(lec.TotalScheduled);
@@ -105,8 +106,18 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
 
   useEffect(() => {
     const loadData = async () => {
+      const data = await fetchCourse();
+
+      const filterdata = data.filter((cou) => cou.branchId === Branc);
+
+      setCourses(filterdata);
+    };
+    loadData();
+  }, [Branc]);
+
+  useEffect(() => {
+    const loadData = async () => {
       const userdata = await fetchUser();
-      
 
       const filteruser = userdata
         .filter((user) => user.branchId === Branc)
@@ -124,7 +135,7 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
         });
 
         const filtereddata = data.data.filter(
-          (batch) => batch.branchId === Branc
+          (batch) => batch.course.id === courseId
         );
         // console.log(filtereddata);
         setBatch(filtereddata);
@@ -135,26 +146,24 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
       setUsers(filteruser);
     };
     loadData();
-  }, [Branc]);
+  }, [courseId]);
 
-  useEffect(()=>{
-    const loadData = async()=>{
+  useEffect(() => {
+    const loadData = async () => {
       const subjectdata = await fetchSubject();
-      const filtersubject = subjectdata.filter((sub) => sub.batchId === Branc);
+      const filtersubject = subjectdata.filter((sub) => sub.batchId === bat);
 
       setSubject(filtersubject);
-    }
+    };
 
     loadData();
-
-  },[Branc,bat])
+  }, [bat]);
 
   const handleCreateLecture = async () => {
-    try { 
-      
+    try {
       let tok = JSON.parse(localStorage.getItem("user"));
       let token = tok.data.token;
-      
+
       const { data } = await axios.post(
         `${mainRoute}/api/lecture`,
         {
@@ -174,27 +183,26 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
           },
         }
       );
-      
+
       toast.success("Lecture Created Successfully");
-      
+
       setOpen(false);
       // router.refresh();
       await refetch();
-    }catch (err) {
+    } catch (err) {
       toast.error("Error in creating lecture");
       setOpen(false);
       // router.refresh();
       await refetch();
     }
-    };
+  };
 
   const handleEdit = async () => {
-    try{
-
+    try {
       let tok = JSON.parse(localStorage.getItem("user"));
       let token = tok.data.token;
       let id = lec.id;
-      
+
       const { data } = await axios.put(
         `${mainRoute}/api/lecture/${id}`,
         {
@@ -214,12 +222,12 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
           },
         }
       );
-      
+
       toast.success("Lecture successfully edited");
       setOpen(false);
-      // router.refresh(); 
+      // router.refresh();
       await refetch();
-    }catch(err){
+    } catch (err) {
       toast.error("Error in editing lecture");
       setOpen(false);
       // router.refresh();
@@ -232,19 +240,19 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
       let tok = JSON.parse(localStorage.getItem("user"));
       let token = tok.data.token;
       let id = lec.id;
-      
+
       const { data } = await axios.delete(`${mainRoute}/api/lecture/${id}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       toast.success("Lecture deleted Successfully");
       setOpen(false);
       // router.refresh();
       await refetch();
-    }catch (err) {
+    } catch (err) {
       toast.error("Error in deleting lecture");
       setOpen(false);
       // router.refresh();
@@ -278,6 +286,22 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
                     </SelectTrigger>
                     <SelectContent>
                       {branch.map((item, i) => (
+                        <SelectItem key={i} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-2 ">
+                  <Label>Course:</Label>
+                  <Select onValueChange={(v) => setCourseId(v)}>
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder={`Course`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((item, i) => (
                         <SelectItem key={i} value={item.id}>
                           {item.name}
                         </SelectItem>
@@ -407,8 +431,27 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
                 </div>
 
                 <div className="flex gap-2 ">
+                  <Label>Course:</Label>
+                  <Select
+                    value={courseId}
+                    onValueChange={(v) => setCourseId(v)}
+                  >
+                    <SelectTrigger className={`w-full`}>
+                      <SelectValue placeholder={`Course`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((item, i) => (
+                        <SelectItem key={i} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-2 ">
                   <Label>Batch:</Label>
-                  <Select value={Branc} onValueChange={(v) => setBranc(v)}>
+                  <Select value={bat} onValueChange={(v) => setBat(v)}>
                     <SelectTrigger className={`w-full`}>
                       <SelectValue placeholder={`Batch`} />
                     </SelectTrigger>
@@ -514,10 +557,10 @@ const LectureModal = ({ open, setOpen, type, lec,refetch }) => {
               <>
                 <div className="h-full w-full flex flex-col justify-center px-10 gap-5 [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
                   <p className="">
-                    You Want To Delete Subject Lecture{" "}
+                    You Want To Delete{" "}
                     <span className="font-bold text-2xl text-red-600">
-                      {lectname}
-                    </span>{" "}
+                      {lec?.subject?.name}
+                    </span>{" "}Lecture
                   </p>
                   <Button
                     onClick={deleteBranch}

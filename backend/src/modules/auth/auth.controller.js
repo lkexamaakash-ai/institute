@@ -33,7 +33,7 @@ const login = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const { name, phoneNumber, role, branchId, shiftStartTime, shiftEndTime, salary , facultyType , lectureRate  } =
+    const { name, phoneNumber, role, branchId, shiftStartTime, shiftEndTime, salary , facultyType  } =
       req.body;
 
     if (!name || !phoneNumber || !role || !branchId) {
@@ -53,8 +53,7 @@ const register = async (req, res) => {
       shiftStartTime,
       shiftEndTime,
       salary,
-      facultyType,
-      lectureRate
+      facultyType
     });
 
     res.status(200).json({
@@ -72,15 +71,15 @@ const register = async (req, res) => {
 
 const AdminRegister = async (req, res) => {
   try {
-    const { name, phoneNumber, password } = req.body;
+    const { name, phoneNumber, password, code } = req.body;
 
-    if (!name || !phoneNumber || !password) {
+    if (!name || !phoneNumber || !password || !code) {
       return res.status(400).json({
         message: "All fields are required",
       });
     }
 
-    const result = await registerSuperAdmin({ name, phoneNumber, password });
+    const result = await registerSuperAdmin({ name, phoneNumber, password,code });
 
     res.status(200).json({
       success: true,

@@ -42,9 +42,10 @@ model User {
   branchId Int?
   branch   Branch? @relation(fields: [branchId], references: [id])
 
-  facultySubjects  FacultySubject[]
-  lectures         LectureSchedule[]
-  staffAttendances StaffAttendance[]
+  facultySubjects    FacultySubject[]
+  lectures           LectureSchedule[]
+  staffAttendances   StaffAttendance[]
+  facultyAttendances FacultyAttendance[]
 
   createdAt DateTime @default(now())
 }
@@ -132,6 +133,7 @@ model StaffAttendance {
 
   lateMinutes  Int @default(0)
   extraPenalty Int @default(0)
+  totalPenalty Int @default(0)
 
   isLate Boolean @default(false)
 
@@ -141,6 +143,22 @@ model StaffAttendance {
   createdAt DateTime @default(now())
 
   @@unique([staffId, date])
+}
+
+model FacultyAttendance {
+  id Int @id @default(autoincrement())
+
+  facultyId Int
+  faculty   User @relation(fields: [facultyId], references: [id])
+
+  date           DateTime
+  inTime         DateTime
+  outTime        DateTime?
+  workingMinutes Int       @default(0)
+  isLeave        Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  @@unique([facultyId, date])
 }
 
 model Batch {

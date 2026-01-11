@@ -25,15 +25,12 @@ export const ManagementProvider = ({ children }) => {
     let tok = JSON.parse(localStorage.getItem("user"));
     let token = tok.data.token;
 
-    const { data } = await axios.get(
-      `${mainRoute}/api/users/allusers`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const { data } = await axios.get(`${mainRoute}/api/users/allusers`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return data.data;
   };
@@ -62,24 +59,51 @@ export const ManagementProvider = ({ children }) => {
       },
     });
 
-    return data.data
+    return data.data;
   };
 
-  const changePassword = async(id,newPass,oldPass) =>{
+  const changePassword = async (id, newPass, oldPass) => {
     let tok = JSON.parse(localStorage.getItem("user"));
     let token = tok.data.token;
-    const {data} = await axios.put(`${mainRoute}/api/auth/changepass/${id}`,{newPass,oldPass},{
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":`Bearer ${token}`
+    const { data } = await axios.put(
+      `${mainRoute}/api/auth/changepass/${id}`,
+      { newPass, oldPass },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-    })
+    );
 
-    return data.data
-  }
+    return data.data;
+  };
+
+  const fetchCourse = async () => {
+    let tok = JSON.parse(localStorage.getItem("user"));
+    let token = tok.data.token;
+
+    const { data } = await axios.get(`${mainRoute}/api/courses`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return data.data;
+  };
 
   return (
-    <ManagementContext value={{ fetchBranch, fetchUser, fetchSubject, fetchLecture, changePassword }}>
+    <ManagementContext
+      value={{
+        fetchBranch,
+        fetchUser,
+        fetchSubject,
+        fetchLecture,
+        changePassword,
+        fetchCourse
+      }}
+    >
       {children}
     </ManagementContext>
   );

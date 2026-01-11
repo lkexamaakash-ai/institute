@@ -11,4 +11,25 @@ router.post(
     attendanceController.markAttendance
 )
 
+
+router.get(
+  "/faculty/:facultyId/monthly-summary",
+  protect,
+  attendanceController.facultyMonthlySummaryController
+);
+
+
+router.post(
+  "/faculty/attendance/mark",
+  protect,
+  attendanceController.markFacultyAttendanceController,
+);
+
+router.get(
+  "/faculty/salary-summary/:facultyId",
+  protect,
+  attendanceController.salaryBasedFacultySummaryController
+);
+
+
 module.exports = router

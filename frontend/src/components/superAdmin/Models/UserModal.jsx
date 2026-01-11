@@ -18,8 +18,23 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
   const isoTo24Hour = (isoString) => {
     if (!isoString) return "";
     const date = new Date(isoString);
-    return date.toISOString().slice(11, 16); // HH:mm
+    return date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
+
+  const fType = [
+    {
+      name: "Lecture Based",
+      value: "LECTURE_BASED",
+    },
+    {
+      name: "Salary Based",
+      value: "SALARY_BASED",
+    },
+  ];
 
   const role = [
     {
@@ -29,10 +44,6 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
     {
       name: "Faculty",
       value: "FACULTY",
-    },
-    {
-      name: "Branch Admin",
-      value: "BRANCH_ADMIN",
     },
     {
       name: "Super Admin",
@@ -48,6 +59,7 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
   const [shiftInTime, setShiftInTime] = useState(null);
   const [shiftOutTime, setShiftOutTime] = useState(null);
   const [salary, setSalary] = useState(null);
+  const [facultyType, setFacultyType] = useState(null);
 
   useEffect(() => {
     console.log(user);
@@ -61,18 +73,20 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
     if (user?.role) {
       setRole(user.role);
     }
-
     if (user?.branch) {
       setBranches(user.branch.id);
     }
-    if (user?.salary) {
-      setSalary(user.salary);
+    if (user?.salary || user?.lectureRate) {
+      setSalary(user.salary || user.lectureRate);
     }
     if (user?.shiftStartTime) {
       setShiftInTime(isoTo24Hour(user.shiftStartTime));
     }
     if (user?.shiftEndTime) {
       setShiftOutTime(isoTo24Hour(user.shiftEndTime));
+    }
+    if (user?.facultyType) {
+      setFacultyType(user.facultyType);
     }
   }, [user]);
 
@@ -110,6 +124,7 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
           branchId: branches,
           shiftStartTime: shiftInTime,
           shiftEndTime: shiftOutTime,
+          facultyType: facultyType,
           salary: salary,
         },
         {
@@ -168,29 +183,28 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
   };
 
   const deleteUser = async () => {
-    try{
-
+    try {
       const id = user?.id;
       let tokn = JSON.parse(localStorage.getItem("user"));
       let token = tokn.data.token;
-      
-    const { data } = await axios.delete(`${mainRoute}/api/users/${id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
 
-    toast.success("User Deleted Successfully");
-    setOpen(false);
-    // router.refresh();
-    await refetch();  
-  }catch(err){
-    toast.error("Error in deleting user");
-    setOpen(false);
-    // router.refresh();
-    await refetch();
-  }
+      const { data } = await axios.delete(`${mainRoute}/api/users/${id}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      toast.success("User Deleted Successfully");
+      await refetch();
+      setOpen(false);
+      // router.refresh();
+    } catch (err) {
+      toast.error("Error in deleting user");
+      await refetch();
+      setOpen(false);
+      // router.refresh();
+    }
   };
   return (
     <>
@@ -222,15 +236,6 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
                     onChange={(e) => setEmail(e.target.value)}
                     type={`number`}
                     placeholder={`Phone Number`}
-                  />
-                </div>
-
-                <div className="">
-                  <Label>Salary(per day):</Label>
-                  <Input
-                    onChange={(e) => setSalary(e.target.value)}
-                    type={`number`}
-                    placeholder={`Salary`}
                   />
                 </div>
 
@@ -270,7 +275,45 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
                   </div>
                 </div>
 
-                {roles === "STAFF" && (
+                {roles === "FACULTY" && (
+                  <div className="">
+                    <Label>Faculty Type:</Label>
+                    <Select
+                      onValueChange={(v) => setFacultyType(v)}
+                      className={`w-full`}
+                    >
+                      <SelectTrigger className={`w-full`}>
+                        <SelectValue placeholder={`Faculty Type`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fType.map((item, i) => (
+                          <SelectItem key={i} value={item.value}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="">
+                  <Label>
+                    Salary(
+                    {`${
+                      roles === "STAFF" || facultyType === "SALARY_BASED"
+                        ? "Monthly"
+                        : "Per Lecture"
+                    }`}
+                    ):
+                  </Label>
+                  <Input
+                    onChange={(e) => setSalary(e.target.value)}
+                    type={`number`}
+                    placeholder={`Salary`}
+                  />
+                </div>
+
+                {(roles === "STAFF" || facultyType === "SALARY_BASED") && (
                   <div className="flex  justify-around w-full [&>div]:w-[50%] [&>div]:flex [&>div]:flex-col [&>div]:gap-2">
                     <Label>Shift Time</Label>
                     <div className="flex-row! w-full!">
@@ -318,15 +361,6 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
                   />
                 </div>
 
-                <div className="">
-                  <Label>Salary(per day):</Label>
-                  <Input
-                    value={salary}
-                    onChange={(e) => setSalary(e.target.value)}
-                    type={`number`}
-                    placeholder={`Salary`}
-                  />
-                </div>
                 <div className="flex flex-row! justify-around [&>div]:w-[50%] [&>div]:flex [&>div]:flex-col [&>div]:gap-2 ">
                   <div className="">
                     <Label>Role:</Label>
@@ -369,7 +403,26 @@ const UserModal = ({ open, setOpen, type, user, refetch }) => {
                     </Select>
                   </div>
                 </div>
-                {roles === "STAFF" && (
+
+                <div className="">
+                  <Label>
+                    Salary(
+                    {`${
+                      roles === "STAFF" || facultyType === "SALARY_BASED"
+                        ? "Monthly"
+                        : "Per Lecture"
+                    }`}
+                    ):
+                  </Label>
+                  <Input
+                    value={salary}
+                    onChange={(e) => setSalary(e.target.value)}
+                    type={`number`}
+                    placeholder={`Salary`}
+                  />
+                </div>
+
+                {(roles === "STAFF" || facultyType === "SALARY_BASED") && (
                   <div className="flex  justify-around w-full [&>div]:w-[50%] [&>div]:flex [&>div]:flex-col [&>div]:gap-2">
                     <Label>Shift Time</Label>
                     <div className="flex-row! w-full!">

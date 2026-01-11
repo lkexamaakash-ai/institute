@@ -20,7 +20,7 @@ const UserManagement = () => {
     "Phone Number",
     "Role",
     "Branch",
-    "Salary(per day)",
+    "Salary",
     "Created On",
     "Actions",
   ];
@@ -57,8 +57,6 @@ const UserManagement = () => {
 
   return (
     <>
-      {/* <div className="h-full w-full p-4 py-6 flex flex-wrap gap-5 flex-col items-center "> */}
-      {/* <div className="h-[91%] bg-white m-2 rounded flex flex-col overflow-hidden gap-5 p-4 py-6 flex-wrap "> */}
       <div className="h-[91%]  bg-white m-2 rounded flex flex-col gap-5 p-4 py-6 overflow-y-auto overflow-x-auto ">
         <div className="w-full flex items-center justify-end">
           <Button
@@ -96,7 +94,7 @@ const UserManagement = () => {
                   <li>{user.phoneNumber}</li>
                   <li>{formatRole(user.role)}</li>
                   <li>{user.branch?.name || "-"}</li>
-                  <li>{user.salary || 0}</li>
+                  <li>{(user.facultyType === "LECTURE_BASED") ? user.lectureRate : user.salary }</li>
                   <li>{user.createdAt.split("T")[0]}</li>
                   <li className="flex justify-center">
                     <ActionButton
@@ -111,7 +109,10 @@ const UserManagement = () => {
               );
             })
           ) : (
-            <p className="text-center my-5 text-xl">No Users</p>
+            <div className="h-[50vh] flex justify-center items-center">
+              <p className="text-center my-5 text-xl">No Users</p>
+
+            </div>
           )}
         </div>
       </div>

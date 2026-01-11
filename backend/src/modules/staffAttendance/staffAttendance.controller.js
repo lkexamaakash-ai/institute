@@ -35,6 +35,32 @@ const monthlyReport = async (req, res) => {
   res.json({ success: true, data });
 };
 
+const staffSalarySummaryController = async (req, res) => {
+  try {
+    const { staffId } = req.params;
+    const { month, year } = req.query;
+
+    const summary = await service.getStaffMonthlySalarySummary(
+      Number(staffId),
+      Number(month),
+      Number(year)
+    );
+
+    res.json({
+      message: "Staff salary summary fetched successfully",
+      success: true,
+      data: summary,
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: err.message,
+      success: false,
+    });
+  }
+};
+
 module.exports = {
-    mark,monthlyReport
-}
+  mark,
+  monthlyReport,
+  staffSalarySummaryController,
+};

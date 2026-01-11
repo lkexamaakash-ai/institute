@@ -102,7 +102,11 @@ const getAllLecture = async () => {
       // branch: true,
       batch: {
         include:{
-          branch:true,
+          course:{
+            include:{
+              branch:true
+            }
+          },
           lectureSchedules:true
         }
       },

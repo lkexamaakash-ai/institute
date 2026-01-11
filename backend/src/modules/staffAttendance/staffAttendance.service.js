@@ -1,77 +1,143 @@
 const { prisma } = require("../../config/db");
 
-function getPerMinuteRate(
-  monthlySalary,
-  workingMinutesPerDay,
-  workingDays = 30
-) {
+function getPerMinuteRate(monthlySalary, workingMinutesPerDay, workingDays) {
   return monthlySalary / (workingDays * workingMinutesPerDay);
 }
 
+const getDaysInCurrentMonth = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+};
+
+// function calculateStaffAttendance({
+//   shiftStartTime,
+//   shiftEndTime,
+//   actualInTime,
+//   actualOutTime,
+//   monthlySalary,
+//   workingMinutesPerDay,
+// }) {
+
+//   const workingDays = getDaysInCurrentMonth();
+
+//   const perMinuteRate = getPerMinuteRate(monthlySalary, workingMinutesPerDay,workingDays);
+
+//   // ⏰ Late calculation
+//   let lateMinutes = Math.max(
+//     0,
+//     Math.floor((actualInTime - shiftStartTime) / (1000 * 60))
+//   );
+
+//   let isLate = false;
+//   let fixedPenalty = 0;
+//   let extraPenalty = 0;
+
+//   if (lateMinutes > 15) {
+//     isLate = true;
+//     fixedPenalty = 50;
+
+//     // shift extension check
+//     const expectedExtendedEnd = new Date(
+//       shiftEndTime.getTime() + lateMinutes * 60000
+//     );
+
+//     if (!actualOutTime || actualOutTime < expectedExtendedEnd) {
+//       const unextendedMinutes = Math.max(
+//         0,
+//         Math.floor(
+//           (expectedExtendedEnd - (actualOutTime || shiftEndTime)) / (1000 * 60)
+//         )
+//       );
+//       extraPenalty = Math.floor(unextendedMinutes * perMinuteRate);
+//     }
+//   }
+
+//   // ⏱️ Overtime (starts AFTER 30 min)
+//   let overtimeMinutes = 0;
+//   let overtimePay = 0;
+
+//   if (actualOutTime) {
+//     const overtimeRaw =
+//       Math.floor((actualOutTime - shiftEndTime) / (1000 * 60)) - 30;
+
+//     if (overtimeRaw > 0) {
+//       overtimeMinutes = overtimeRaw;
+//       overtimePay = Math.floor(overtimeMinutes * perMinuteRate);
+//     }
+//   }
+
+//   return {
+//     lateMinutes,
+//     isLate,
+//     fixedPenalty,
+//     extraPenalty,
+//     overtimeMinutes,
+//     overtimePay,
+//   };
+// }
+
 function calculateStaffAttendance({
   shiftStartTime,
-  shiftEndTime,
   actualInTime,
   actualOutTime,
   monthlySalary,
   workingMinutesPerDay,
 }) {
-  const perMinuteRate = getPerMinuteRate(
-    monthlySalary,
-    workingMinutesPerDay
+  const GRACE_MINUTES = 15;
+  const FIXED_PENALTY = 50;
+
+  const workingDays = getDaysInCurrentMonth();
+  const perMinuteRate = monthlySalary / (workingDays * workingMinutesPerDay);
+
+  // -------- ACTUAL WORK --------
+  const actualWorkedMinutes = Math.max(
+    0,
+    Math.floor((actualOutTime - actualInTime) / (1000 * 60))
   );
 
-  // ⏰ Late calculation
-  let lateMinutes = Math.max(
+  // -------- REQUIRED --------
+  const requiredMinutes = workingMinutesPerDay;
+
+  // -------- LATE --------
+  const lateMinutes = Math.max(
     0,
     Math.floor((actualInTime - shiftStartTime) / (1000 * 60))
   );
 
-  let isLate = false;
-  let fixedPenalty = 0;
+  const isLate = lateMinutes > GRACE_MINUTES;
+  const fixedPenalty = isLate ? FIXED_PENALTY : 0;
+
+  // -------- SHORTFALL --------
+  const shortfallMinutes = Math.max(0, requiredMinutes - actualWorkedMinutes);
+
   let extraPenalty = 0;
 
-  if (lateMinutes > 15) {
-    isLate = true;
-    fixedPenalty = 50;
-
-    // shift extension check
-    const expectedExtendedEnd =
-      new Date(shiftEndTime.getTime() + lateMinutes * 60000);
-
-    if (!actualOutTime || actualOutTime < expectedExtendedEnd) {
-      const unextendedMinutes = Math.max(
-        0,
-        Math.floor(
-          (expectedExtendedEnd - (actualOutTime || shiftEndTime)) /
-            (1000 * 60)
-        )
-      );
-      extraPenalty = Math.floor(unextendedMinutes * perMinuteRate);
-    }
+  if (shortfallMinutes > GRACE_MINUTES) {
+    const penaltyMinutes = shortfallMinutes - GRACE_MINUTES;
+    extraPenalty = Number((penaltyMinutes * perMinuteRate).toFixed(2));
   }
 
-  // ⏱️ Overtime (starts AFTER 30 min)
-  let overtimeMinutes = 0;
-  let overtimePay = 0;
+  // -------- OVERTIME --------
+  const extraMinutes = Math.max(0, actualWorkedMinutes - requiredMinutes);
 
-  if (actualOutTime) {
-    const overtimeRaw =
-      Math.floor((actualOutTime - shiftEndTime) / (1000 * 60)) - 30;
-
-    if (overtimeRaw > 0) {
-      overtimeMinutes = overtimeRaw;
-      overtimePay = Math.floor(overtimeMinutes * perMinuteRate);
-    }
-  }
+  const overtimeMinutes = Math.floor(extraMinutes / 30) * 30;
+  const overtimePay = (overtimeMinutes / 30) * 50;
 
   return {
     lateMinutes,
     isLate,
+
+    actualWorkedMinutes,
+    shortfallMinutes,
+
     fixedPenalty,
     extraPenalty,
+    totalPenalty: Number((fixedPenalty + extraPenalty).toFixed(2)),
+
     overtimeMinutes,
     overtimePay,
+
+    perMinuteRate: Number(perMinuteRate.toFixed(2)),
   };
 }
 
@@ -87,7 +153,7 @@ const markStaffAttendance = async ({
     where: { id: staffId },
   });
 
-  if (!staff || !staff.monthlySalary || !staff.workingMinutesPerDay) {
+  if (!staff || !staff.salary || !staff.workingMinutesPerDay) {
     throw new Error("Staff salary or working time not configured");
   }
 
@@ -135,7 +201,65 @@ const getStaffMonthlyReport = async (staffId, month, year) => {
   });
 };
 
+const getStaffMonthlySalarySummary = async (staffId, month, year) => {
+  const staff = await prisma.user.findUnique({
+    where: { id: staffId },
+  });
+
+  if (!staff || !staff.salary) {
+    throw new Error("Staff salary not configured");
+  }
+
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0, 23, 59, 59);
+
+  const attendance = await prisma.staffAttendance.findMany({
+    where: {
+      staffId,
+      data: {
+        gte: start,
+        lte: end,
+      },
+    },
+  });
+
+  let fixedLatePenalties = 0;
+  let totalExtaPenalties = 0;
+  let totalOvertimePay = 0;
+  let lateDaysCount = 0;
+
+  attendance.forEach((a) => {
+    if (a.isLate) {
+      lateDaysCount += 1;
+      fixedLatePenalties += a.fixedPenalty;
+    }
+
+    totalExtaPenalties += a.extraPenalty || 0;
+    totalOvertimePay += a.overtimePay || 0;
+  });
+
+  const netPay =
+    staff.salary - fixedLatePenalties - totalExtaPenalties + totalOvertimePay;
+
+  return {
+    staffId,
+    month,
+    year,
+
+    monthlySalary: staff.salary,
+
+    breakdown: {
+      lateDays: lateDaysCount,
+      fixedLatePenalties,
+      totalExtaPenalties,
+      totalOvertimePay,
+    },
+    netPay: Math.max(0, Math.floor(netPay)),
+  };
+};
+
 module.exports = {
   markStaffAttendance,
   getStaffMonthlyReport,
+  getStaffMonthlySalarySummary,
 };

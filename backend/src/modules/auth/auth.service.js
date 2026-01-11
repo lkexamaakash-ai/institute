@@ -42,7 +42,11 @@ const loginUser = async (phoneNumber, password) => {
 };
 
 const registerSuperAdmin = async (data) => {
-  const { name, phoneNumber, password } = data;
+  const { name, phoneNumber, password, code } = data;
+
+  if (process.env.code !== code) {
+    throw new Error("You are authorized to register");
+  }
 
   const existingUser = await prisma.user.findUnique({
     where: { phoneNumber },
@@ -98,13 +102,17 @@ const registerUser = async (data) => {
     shiftEndTime,
     salary,
     facultyType,
-    lectureRate,
   } = data;
 
+  console.log(shiftStartTime);
+  console.log(shiftEndTime);
   const today = new Date().toISOString().split("T")[0];
 
   const shiftStart = new Date(`${today}T${shiftStartTime}`);
   const shiftEnd = new Date(`${today}T${shiftEndTime}`);
+
+  console.log(shiftStart);
+  console.log(shiftEnd);
 
   const existingUser = await prisma.user.findUnique({
     where: { phoneNumber },
@@ -148,7 +156,15 @@ const registerUser = async (data) => {
       salary: Number(salary),
     };
   } else {
-    if (facultyType === "LECTURE_BASED") {
+    if (facultyType === "SALARY_BASED") {
+      const workingMinutesPerDay = Math.floor(
+        (shiftEnd - shiftStart) / (1000 * 60)
+      );
+
+      if (workingMinutesPerDay <= 0) {
+        throw new Error("InValid shift timings");
+      }
+
       const user = await prisma.user.create({
         data: {
           name,
@@ -157,6 +173,8 @@ const registerUser = async (data) => {
           role,
           branchId: branchId || null,
           facultyType,
+          shiftStartTime: shiftStart,
+          shiftEndTime: shiftEnd,
           salary: Number(salary),
         },
       });
@@ -178,7 +196,8 @@ const registerUser = async (data) => {
           password: hashedPassword,
           role,
           branchId: branchId || null,
-          lectureRate: lectureRate ? Number(lectureRate) : null,
+          facultyType,
+          lectureRate: salary ? Number(salary) : null,
         },
       });
       return {

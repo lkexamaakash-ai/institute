@@ -62,6 +62,11 @@ const Login = () => {
             </a>
           </p>
         </div>
+        <div className="mt-5">
+          <p className="text-sm">
+            <span onClick={()=>router.push('/register')}  className="text-blue-700 cursor-pointer font-semibold">Register</span>
+          </p>
+        </div>
       </div>
     </div>
   );

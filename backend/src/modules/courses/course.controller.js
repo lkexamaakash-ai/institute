@@ -4,7 +4,7 @@ const createCourse = async (req, res) => {
   try {
     const { name, branchId } = req.body;
 
-    if(!name || !!branchId){
+    if(!name || !branchId){
       return res.status(400).json({
         message: "Name and BranchId are required",
         success: false,
