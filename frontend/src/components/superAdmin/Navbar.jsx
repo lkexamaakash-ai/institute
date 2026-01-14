@@ -55,10 +55,15 @@ const Navbar = ({open,setOpen}) => {
       link: "/superadmin/report",
     },
     {
+      name:"Historical Data",
+      icon:"",
+      link:"/superadmin/uploadfile"
+    },
+    {
       name:"Profile",
       icon:"",
       link:"/superadmin/profile"
-    }
+    },
   ];
 
     const handleLogout = () => {
@@ -73,8 +78,8 @@ const Navbar = ({open,setOpen}) => {
           <Image alt="logo" src={"/header.jpg"} height={200} width={200} />
           <p onClick={()=>setOpen(false)} className="pr-10 font-bold text-3xl cursor-pointer xl:hidden">X</p>
         </div>
-        <div className="">
-          <ul className="relative px-2 xl:px-0 xl:pl-2">
+        <div className="h-[90%] overflow-auto">
+          <ul className="relative px-2 xl:px-0 xl:pl-2 ">
             {lists.map((item, index) => (
               <li
                 key={index}

@@ -131,3 +131,22 @@
   }
 }
 
+/* Customize scrollbar width */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+/* Customize scrollbar track */
+::-webkit-scrollbar-track {
+  background: #ffffff;
+  filter: drop-shadow(8px 8px 16px rgba(0, 0, 0, 0.5));
+}
+/* Customize scrollbar thumb */
+::-webkit-scrollbar-thumb {
+  background: #be6b66;
+  border-radius: 64px;
+}
+/* Change thumb color on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #000;
+}

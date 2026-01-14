@@ -6,8 +6,6 @@ import Image from "next/image";
 import { mainRoute } from "../apiroute";
 
 const FacMain = () => {
-
-
   const lecturehistory = [
     "Date",
     "Subject",
@@ -46,11 +44,13 @@ const FacMain = () => {
   useEffect(() => {
     let tokn = JSON.parse(localStorage.getItem("user"));
     let token = tokn.data.token;
+    let userId = tokn.data.user.id;
+    let branchId = tokn.data.user.branch.id;
     setBranch(tokn.data.user.branch);
 
     const loadData = async () => {
       const { data } = await axios.get(
-        `${mainRoute}/api/users/role/dash`,
+        `${mainRoute}/api/users/role/dash?userId=${userId}&branchId=${branchId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -58,21 +58,19 @@ const FacMain = () => {
           },
         }
       );
-      const facultyData = data.data.faculty
-        .filter((user) => user.id === tokn.data.user.id)
-        .find((user) => user.branchId === tokn.data.user.branch.id);
+      const facultyData = data.data.faculty;
+      console.log(facultyData);
+      console.log(data.data.lectures);
 
       // const staffData = data.data.faculty.filter(
       //   (user) => user.role === "STAFF"
       // ).filter((user)=>user.branchId === tokn.data.user.branch.id);
       //   const branchData = data.data.branch;
 
-      const lectur = data.data.lectures.filter(
-        (lec) => lec.facultyId === tokn.data.user.id
-      );
+      const lectur = data.data.lectures;
 
       // console.log(branchData);
-      setFaculty(facultyData);
+      setFaculty(facultyData[0]);
       setLecture(lectur);
     };
 
@@ -145,60 +143,47 @@ const FacMain = () => {
     "December",
   ];
 
-  const handleSendWhatsappMsg = () => {
-    const message = `
-*Faculty Monthly Summary*
+  //   const handleSendWhatsappMsg = () => {
+  //     const message = `
+  // *Faculty Monthly Summary*
 
-*Name*: ${faculty.name}
-*Branch*: ${faculty.branch.name}
-*Month*: ${monlist[new Date().getMonth()]}
+  // *Name*: ${faculty.name}
+  // *Branch*: ${faculty.branch.name}
+  // *Month*: ${monlist[new Date().getMonth()]}
 
-*Total Lectures*: ${lecture.reduce(
-      (count, lec) => count + lec.TotalScheduled,
-      0
-    )}
-*Lectures Conducted*: ${lecture.reduce(
-      (count, lec) => count + (lec.attendance ? 1 : 0),
-      0
-    )}
-*Remaining*: ${
-      lecture.reduce((count, lec) => count + lec.TotalScheduled, 0) -
-      lecture.reduce((count, lec) => count + (lec.attendance ? 1 : 0), 0)
-    }
+  // *Total Lectures*: ${lecture.reduce(
+  //       (count, lec) => count + lec.TotalScheduled,
+  //       0
+  //     )}
+  // *Lectures Conducted*: ${lecture.reduce(
+  //       (count, lec) => count + (lec.attendance ? 1 : 0),
+  //       0
+  //     )}
+  // *Remaining*: ${
+  //       lecture.reduce((count, lec) => count + lec.TotalScheduled, 0) -
+  //       lecture.reduce((count, lec) => count + (lec.attendance ? 1 : 0), 0)
+  //     }
 
-*Penalties*:
-• *Late Start*: ${penalty.LATE_START}
-• *Early End*: ${penalty.EARLY_END}
-• *Both*: ${penalty.BOTH}
+  // *Penalties*:
+  // • *Late Start*: ${penalty.LATE_START}
+  // • *Early End*: ${penalty.EARLY_END}
+  // • *Both*: ${penalty.BOTH}
 
-  `.trim();
+  //   `.trim();
 
-    // 918160250887
+  //     // 918160250887
 
-    const whatsappURL = `https://wa.me/918160250887/?text=${encodeURIComponent(
-      message
-    )}`;
-    window.open(whatsappURL, "_blank");
-  };
+  //     const whatsappURL = `https://wa.me/918160250887/?text=${encodeURIComponent(
+  //       message
+  //     )}`;
+  //     window.open(whatsappURL, "_blank");
+  //   };
 
   return (
     <>
       <div className="h-full bg-white m-2 rounded flex flex-col overflow-hidden">
         <div className="px-5 py-2 flex justify-between">
           <h1 className="font-bold text-2xl">Welcome 👋</h1>
-          <Button
-            onClick={handleSendWhatsappMsg}
-            className={`xl:w-[10%] cursor-pointer bg-green-500 hover:bg-green-600`}
-          >
-            <Image
-              src={"/whatsapp.png"}
-              alt="whatsapp"
-              height={100}
-              width={100}
-              className="h-5 w-5"
-            />
-            Whatsapp
-          </Button>
         </div>
 
         <div className="w-[98%] xl:h-[92%]  mx-auto flex flex-col gap-4 overflow-auto xl:overflow-hidden ">
@@ -214,23 +199,18 @@ const FacMain = () => {
             </div>
 
             <div className="bg-gray-200 p-2 xl:p-2 xl:w-full xl:h-full  ">
-              <h1>Lecture Done</h1>
-              <p>
-                {lecture.reduce(
-                  (count, lec) => count + (lec.attendance ? 1 : 0),
-                  0
-                ) || 0}
-              </p>
-            </div>
-
-            <div className="bg-gray-200 p-2 xl:p-2 xl:w-full xl:h-full  ">
               <h1>Remaining Lecture</h1>
               <p>
                 {lecture.reduce((count, lec) => count + lec.TotalScheduled, 0) -
-                  lecture.reduce(
-                    (count, lec) => count + (lec.attendance ? 1 : 0),
-                    0
-                  )}
+                  lecture.reduce((count, lec) => {
+                    if (!Array.isArray(lec.attendance)) return count;
+
+                    const conductedCount = lec.attendance.filter(
+                      (att) => att.status === "CONDUCTED"
+                    ).length;
+
+                    return count + conductedCount;
+                  }, 0)}
               </p>
             </div>
 
@@ -246,6 +226,24 @@ const FacMain = () => {
 
                   return count + penaltiesInLecture;
                 }, 0)}
+              </p>
+            </div>
+
+            <div className="bg-gray-200 p-2 xl:p-2 xl:w-full xl:h-full  ">
+              <h1>Salary</h1>
+              <p className="flex">
+                ₹
+                {faculty?.facultyType === "LECTURE_BASED" ? (
+                  <>
+                    {faculty.lectureRate}{" "}
+                    <span className="text-[10px] mt-1">Per Lecture</span>
+                  </>
+                ) : (
+                  <>
+                    {faculty.salary}{" "}
+                    <span className="text-[10px] mt-1">Per Month</span>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -273,10 +271,13 @@ const FacMain = () => {
               <h1 className="text-xl font-semibold">
                 Lecture History (Last 5 Lectures)
               </h1>
-              <div className="w-full h-full overflow-auto  [&>ul]:grid [&>ul]:grid-cols-[100px_180px_260px_220px_140px_140px] xl:[&>ul]:grid-cols-6 flex flex-col [&>ul]:gap-10  mt-5 [&>ul]:text-center ">
+              <div className={`w-full h-full overflow-auto  [&>ul]:grid [&>ul]:grid-cols-[100px_180px_260px_220px_140px_140px]  ${faculty.facultyType === "LECTURE_BASED"?" [&>ul]:grid [&>ul]:grid-cols-[100px_180px_260px_220px_140px_140px] xl:[&>ul]:grid-cols-6":"[&>ul]:grid [&>ul]:grid-cols-[100px_180px_260px_220px_140px_140px] xl:[&>ul]:grid-cols-5"} flex flex-col [&>ul]:gap-10  mt-5 [&>ul]:text-center `}>
                 <ul className="font-bold mb-5 [&>li]:font-semibold">
-                  {lecturehistory.map((item, index) => (
-                    <li key={index}>{item}</li>
+                  {(faculty.facultyType === "SALARY_BASED"
+                    ? lecturehistory.filter((h) => h !== "Actual Time")
+                    : lecturehistory
+                  ).map((item, i) => (
+                    <li key={i}>{item}</li>
                   ))}
                 </ul>
                 {/* {lecture.map((item, i) => (
@@ -301,10 +302,14 @@ const FacMain = () => {
                         {formatTime(item.startTime)} –{" "}
                         {formatTime(item.endTime)}
                       </li>
-                      <li>
-                        {formatTime(attendance.actualStartTime)} –{" "}
-                        {formatTime(attendance.actualEndTime)}
-                      </li>
+                      {faculty.facultyType === "LECTURE_BASED" && (
+                        <li>
+                          <>
+                            {formatTime(attendance.actualStartTime)} –{" "}
+                            {formatTime(attendance.actualEndTime)}
+                          </>
+                        </li>
+                      )}
                       <li className="text-green-600">Conducted</li>
                       <li>{attendance.penalty}</li>
                     </ul>

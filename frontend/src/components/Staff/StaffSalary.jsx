@@ -34,6 +34,8 @@ const StaffSalary = () => {
     "Late",
     "Overtime (mins)",
     "Overtime Pay (₹)",
+    "Late Duration (mins)",
+    "Penalty",
   ];
 
   const formatTime = (iso) =>
@@ -50,33 +52,6 @@ const StaffSalary = () => {
       year: "numeric",
     });
 
-  // const salaryTableData = [
-  //   {
-  //     date: "06-Jan-2025",
-  //     inTime: "09:40",
-  //     outTime: "18:10",
-  //     late: "Yes",
-  //     overtimeMinutes: 70,
-  //     overtimePay: 100,
-  //   },
-  //   {
-  //     date: "04-Jan-2025",
-  //     inTime: "09:35",
-  //     outTime: "17:45",
-  //     late: "Yes",
-  //     overtimeMinutes: 45,
-  //     overtimePay: 50,
-  //   },
-  //   {
-  //     date: "02-Jan-2025",
-  //     inTime: "09:00",
-  //     outTime: "17:00",
-  //     late: "No",
-  //     overtimeMinutes: 0,
-  //     overtimePay: 0,
-  //   },
-  // ];
-
   const [staffData, setStaffData] = useState({});
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -90,7 +65,7 @@ const StaffSalary = () => {
 
     const loadData = async () => {
       const { data } = await axios.get(
-        `${mainRoute}/api/users/role/dash`,
+        `${mainRoute}/api/users/role/dash?userId=${tokn.data.user.id}&branchId=${tokn.data.user.branch.id}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -99,23 +74,23 @@ const StaffSalary = () => {
         }
       );
       const facultyData = data.data.faculty
-        .filter((user) => user.id === tokn.data.user.id)
-        .find((user) => user.branchId === tokn.data.user.branch.id);
       console.log(facultyData);
 
-      setStaffData(facultyData);
+      setStaffData(facultyData[0]);
     };
 
     loadData();
   }, []);
 
   useEffect(() => {
+    console.log(staffData.staffAttendances)
     const monthAttendances =
       staffData?.staffAttendances?.filter((att) => {
         const d = new Date(att.date);
-        return d.getMonth() === selectedMonth;
+        return d.getMonth() === selectedMonth
       }) || [];
 
+      console.log(monthAttendances)
     const salaryTableData = monthAttendances.map((att) => ({
       date: formatDate(att.date),
       inTime: formatTime(att.actualInTime),
@@ -123,7 +98,10 @@ const StaffSalary = () => {
       late: att.isLate ? "Yes" : "No",
       overtimeMinutes: att.overtimeMinutes || 0,
       overtimePay: att.overtimePay || 0,
+      totalPenalty: att.totalPenalty || 0,
+      lateMinutes: att.lateMinutes,
     }));
+    console.log(salaryTableData)
 
     setSalaryTableData(salaryTableData);
   }, [selectedMonth, staffData]);
@@ -136,7 +114,7 @@ const StaffSalary = () => {
           <Label htmlFor={`Sort`} className={`uppercase`}>
             SortBy:
           </Label>
-          <Select onValueChange={(v) => setSelectedMonth(list.indexOf(v))}>
+          <Select value={list[selectedMonth]} onValueChange={(v) => setSelectedMonth(list.indexOf(v))}>
             <SelectTrigger id={`Sort`}>
               <SelectValue placeholder={`SortBy`} />
             </SelectTrigger>
@@ -150,36 +128,67 @@ const StaffSalary = () => {
           </Select>
         </div>
         {/* summary card */}
-        <div className="bg-gray-100 w-[98%] xl:h-[20vh] xl:w-[30vw] rounded p-2 py-4 flex flex-col justify-between relative">
-          <h1 className="font-semibold text-xl">
-            Net OverTime Pay(Current month)
-          </h1>
-          <p className="text-6xl text-green-600">
-            ₹
-            {salaryTableData.reduce(
-              (sum, att) => sum + (att.overtimePay || 0),
-              0
-            )}
-          </p>
+        <div className="flex gap-4">
+          <div className="bg-gray-100 w-[98%] xl:h-[20vh] xl:w-[30vw] rounded p-2 py-4 flex flex-col justify-between relative">
+            <h1 className="font-semibold text-xl">
+              Net OverTime Pay(Current month)
+            </h1>
+            <p className="text-6xl text-green-600">
+              ₹
+              {salaryTableData.reduce(
+                (sum, att) => sum + (att.overtimePay || 0),
+                0
+              )}
+            </p>
+          </div>
+          <div className="bg-gray-100 w-[98%] xl:h-[20vh] xl:w-[30vw] rounded p-2 py-4 flex flex-col justify-between relative">
+            <h1 className="font-semibold text-xl">
+              Net Penalties Pay(Current month)
+            </h1>
+            <p className="text-6xl text-red-600">
+              ₹
+              {salaryTableData.reduce(
+                (sum, att) => sum + (att.totalPenalty || 0),
+                0
+              )}
+            </p>
+          </div>
         </div>
         {/* OverTime table */}
 
         <div className="bg-gray-100 h-[91%]  overflow-auto w-[98%] rounded p-2 py-4 flex flex-col xl:justify-start relative">
           <h1 className=" font-semibold uppercase">Overtimes</h1>
-          <ul className="grid  grid-cols-[100px_180px_260px_220px_140px_140px] xl:grid-cols-6 text-center border-b p-2 font-semibold">
+          <ul className="grid  grid-cols-[100px_180px_260px_220px_140px_140px_150px_150px] xl:grid-cols-8 text-center border-b p-2 font-semibold">
             {salaryTableHeaders.map((item, i) => (
               <li key={i}>{item}</li>
             ))}
           </ul>
 
           {salaryTableData.map((item, i) => (
-            <ul key={i} className="grid grid-cols-[100px_180px_260px_220px_140px_140px] xl:grid-cols-6 text-center border-b p-2">
+            <ul
+              key={i}
+              className="grid grid-cols-[100px_180px_260px_220px_140px_140px_150px_150px] xl:grid-cols-8 text-center border-b p-2"
+            >
               <li>{item.date}</li>
               <li>{item.inTime}</li>
               <li>{item.outTime}</li>
               <li>{item.late}</li>
               <li>{item.overtimeMinutes}</li>
-              <li>{item.overtimePay}</li>
+              <li
+                className={`${
+                  item.overtimePay > 0 ? "text-green-600 font-semibold" : ""
+                }`}
+              >
+                ₹{item.overtimePay}
+              </li>
+              <li>{item.lateMinutes}</li>
+              <li
+                className={`${
+                  item.totalPenalty > 0 ? "text-red-600 font-semibold" : ""
+                }`}
+              >
+                ₹{item.totalPenalty}
+              </li>
             </ul>
           ))}
         </div>

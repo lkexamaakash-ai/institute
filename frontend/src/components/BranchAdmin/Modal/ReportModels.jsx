@@ -4,6 +4,7 @@ import FacultyLectureStatusDonut from "@/components/chart/FacultyLectureStatusDo
 import FacultyPenaltyDonut from "@/components/chart/FacultyPenaltyDonut";
 import MonthlySalaryDonut from "@/components/chart/MonthlySalaryDonut";
 import SalaryBasedFacultyDonut from "@/components/chart/SalaryBasedFacultyDonut";
+import SelectBranchModels from "@/components/superAdmin/Models/SelectBranchModels";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -17,6 +18,8 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
 const ReportModels = ({ open, setOpen, user, setUser }) => {
+  const [oping, setOping] = useState(false);
+
   const list = [
     "Jan",
     "Feb",
@@ -143,7 +146,17 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
     const totalPayout = conductedLectures * lectureRate;
 
     const message = `
-    Dear *${faculty.name}*, In ${faculty?.lectures?.[0]?.batch?.course?.name} Course ${faculty?.lectures?.[0]?.batch?.name} Batch For *${subjectName}*, *${totalScheduled}* ${totalScheduled > 1? "lectures":"lecture"} were allocated. As of ${list[currentMon]}, *${conductedLectures}* have been completed, leaving ${remainingLectures} lectures pending at ${faculty?.branch?.name} Branch. Kindly ensure the pending lectures are completed within the given timeline so that the syllabus remains on track. Thank you for your cooperation. Best regards, *Academic Coordinator*
+    Dear *${faculty.name}*, In ${
+      faculty?.lectures?.[0]?.batch?.course?.name
+    } Course ${
+      faculty?.lectures?.[0]?.batch?.name
+    } Batch For *${subjectName}*, *${totalScheduled}* ${
+      totalScheduled > 1 ? "lectures" : "lecture"
+    } were allocated. As of ${
+      list[currentMon]
+    }, *${conductedLectures}* have been completed, leaving ${remainingLectures} lectures pending at ${
+      faculty?.branch?.name
+    } Branch. Kindly ensure the pending lectures are completed within the given timeline so that the syllabus remains on track. Thank you for your cooperation. Best regards, *Academic Coordinator*
   `.trim();
 
     const whatsappURL = `https://wa.me/${
@@ -246,7 +259,11 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
               ))}
             <div className="w-full justify-center items-center">
               <Button
-                onClick={user?.role === "STAFF"? handleSendWhatsappMsg : handleLectureBasedFacultySendWhatsappMsg }
+                onClick={
+                  user?.role === "STAFF"
+                    ? handleSendWhatsappMsg
+                    : () => setOping(true)
+                }
                 className={`w-full mt-5 cursor-pointer bg-green-500 hover:bg-green-600 mx-auto`}
               >
                 <Image
@@ -262,6 +279,13 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
           </div>
         </div>
       )}
+      <SelectBranchModels
+        currentMon={currentMon}
+        userdata={user}
+        list={list}
+        open={oping}
+        setOpen={setOping}
+      />
     </>
   );
 };

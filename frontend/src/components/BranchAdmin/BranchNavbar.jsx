@@ -50,6 +50,11 @@ const BranchNavbar = ({ open, setOpen }) => {
       link: "/branchadmin/report",
     },
     {
+      name:"Historical Data",
+      icon:"",
+      link:"/branchadmin/history"
+    },
+    {
       name: "Profile",
       icon: "",
       link: "/branchadmin/profile",

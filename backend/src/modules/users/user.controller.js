@@ -9,6 +9,7 @@ const {
   branchDashoard,
   updateUser,
   deleteUser,
+  userDashboard,
 } = require("./user.service");
 
 const assignToBranch = async (req, res) => {
@@ -92,7 +93,7 @@ const promoteToBranchAdmin = async (req, res) => {
   try {
     const { userId, branchId } = req.body;
 
-    console.log(userId)
+    console.log(userId);
 
     if (!userId || !branchId) {
       return res.status(400).json({ message: "userId and branchId required" });
@@ -144,11 +145,29 @@ const DashboardData = async (req, res) => {
   }
 };
 
+const userDashboardData = async (req, res) => {
+  try {
+    const { branchId, userId } = req.query;
+    const dashboard = await userDashboard({
+      branchId: Number(branchId),
+      userId: Number(userId),
+    });
 
+    return res.json({
+      success: true,
+      message: "Dashboard",
+      data: dashboard,
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: err.message,
+    });
+  }
+};
 
 const update = async (req, res) => {
   try {
-    const id  = Number(req.params.id);
+    const id = Number(req.params.id);
     const {
       name,
       phoneNumber,
@@ -169,9 +188,6 @@ const update = async (req, res) => {
       shiftStartTime,
       shiftEndTime
     );
-
-    console.log(user)
-
     res.json({
       success: true,
       message: "User Updated",
@@ -184,25 +200,22 @@ const update = async (req, res) => {
   }
 };
 
-
-const remove = async(req,res) =>{
+const remove = async (req, res) => {
   try {
-
-    const id = Number(req.params.id)
-    const userdelete = deleteUser(id)
+    const id = Number(req.params.id);
+    const userdelete = deleteUser(id);
 
     res.json({
-      success:true,
-      message:"User removed",
-      data:userdelete
-    })
-    
+      success: true,
+      message: "User removed",
+      data: userdelete,
+    });
   } catch (error) {
     res.status(400).json({
-      message:error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 module.exports = {
   assignToBranch,
   bulkAssignToBranch,
@@ -212,5 +225,5 @@ module.exports = {
   DashboardData,
   update,
   remove,
-
+  userDashboardData,
 };

@@ -1,12 +1,74 @@
 const { prisma } = require("../../config/db");
 
+// const ALLOWED_MINUTES = 15;
+// function calculatePenalty(plannedStart, plannedEnd, actualStart, actualEnd) {
+//   const plannedStartTime = new Date(plannedStart);
+//   const plannedEndTime = new Date(plannedEnd);
+//   const actualStartTime = new Date(actualStart);
+//   const actualEndTime = new Date(actualEnd);
+
+//   const lateMinutes = Math.max(
+//     0,
+//     (actualStartTime - plannedStartTime) / (1000 * 60)
+//   );
+
+//   const earlyMinutes = Math.max(
+//     0,
+//     (plannedEndTime - actualEndTime) / (1000 * 60)
+//   );
+
+//   const is_late = lateMinutes > ALLOWED_MINUTES;
+//   const isEarly = earlyMinutes > ALLOWED_MINUTES;
+
+//   if (is_late && isEarly) return "BOTH";
+//   if (is_late) return "LATE_START";
+//   if (isEarly) return "EARLY_END";
+//   return "NONE";
+// }
+
+const FIFTEEN_MIN = 15 * 60 * 1000;
+
+const LECTURE_MINUTES = 120;
 const ALLOWED_MINUTES = 15;
-function calculatePenalty(plannedStart, plannedEnd, actualStart, actualEnd) {
+
+function calculatePenalty({
+  plannedStart,
+  plannedEnd,
+  actualStart,
+  actualEnd,
+}) {
+  // IMPORTANT: convert everything to timestamps (number)
+  const pStart = new Date(plannedStart).getTime();
+  const pEnd = new Date(plannedEnd).getTime();
+  const aStart = new Date(actualStart).getTime();
+  const aEnd = new Date(actualEnd).getTime();
+
+  const isLate = aStart - pStart > FIFTEEN_MIN;
+  const isEarly = pEnd - aEnd > FIFTEEN_MIN;
+
+  let penalty = "NONE";
+  if (isLate && isEarly) penalty = "BOTH";
+  else if (isLate) penalty = "LATE_START";
+  else if (isEarly) penalty = "EARLY_END";
+
+  return penalty;
+}
+
+function calculateLectureBasedFacultyBackend({
+  plannedStart,
+  plannedEnd,
+  actualStart,
+  actualEnd,
+  lectureRate,
+  status, // CONDUCTED | CANCELLED | MISSED
+}) {
   const plannedStartTime = new Date(plannedStart);
   const plannedEndTime = new Date(plannedEnd);
   const actualStartTime = new Date(actualStart);
   const actualEndTime = new Date(actualEnd);
+  console.log(lectureRate)
 
+  // ---------- PENALTY LABEL ----------
   const lateMinutes = Math.max(
     0,
     (actualStartTime - plannedStartTime) / (1000 * 60)
@@ -17,13 +79,39 @@ function calculatePenalty(plannedStart, plannedEnd, actualStart, actualEnd) {
     (plannedEndTime - actualEndTime) / (1000 * 60)
   );
 
-  const is_late = lateMinutes > ALLOWED_MINUTES;
+  const isLate = lateMinutes > ALLOWED_MINUTES;
   const isEarly = earlyMinutes > ALLOWED_MINUTES;
 
-  if (is_late && isEarly) return "BOTH";
-  if (is_late) return "LATE_START";
-  if (isEarly) return "EARLY_END";
-  return "NONE";
+  let penalty = "NONE";
+  if (isLate && isEarly) penalty = "BOTH";
+  else if (isLate) penalty = "LATE_START";
+  else if (isEarly) penalty = "EARLY_END";
+
+  // ---------- WORKED MINUTES ----------
+  let workedMinutes = 0;
+  if (actualEndTime > actualStartTime) {
+    workedMinutes = Math.floor((actualEndTime - actualStartTime) / (1000 * 60));
+  }
+
+  // ---------- PAYOUT ----------
+  let lectureEquivalent = workedMinutes / LECTURE_MINUTES;
+  let payout = Number((lectureEquivalent * lectureRate).toFixed(2));
+
+  // ---------- STATUS OVERRIDES ----------
+  if (status === "CANCELLED") {
+    payout = Number((lectureRate / 2).toFixed(2));
+  }
+
+  if (status === "MISSED") {
+    payout = 0;
+  }
+
+  return {
+    penalty,
+    workedMinutes,
+    lectureEquivalent: Number(lectureEquivalent.toFixed(2)),
+    payout,
+  };
 }
 
 const markLectureAttendance = async ({
@@ -38,6 +126,7 @@ const markLectureAttendance = async ({
       faculty: true,
     },
   });
+  console.log(lecture)
 
   if (!lecture) throw new Error("Lecture not found");
 
@@ -54,36 +143,46 @@ const markLectureAttendance = async ({
     payout = 0;
     penalty = "NONE";
   } else {
-    penalty = calculatePenalty(
-      lecture.startTime,
-      lecture.endTime,
-      actualStartTime,
-      actualEndTime
-    );
+    penalty = calculateLectureBasedFacultyBackend({
+      plannedStart:lecture.startTime,
+      plannedEnd:lecture.endTime,
+      actualStart:actualStartTime,
+      actualEnd:actualEndTime,
+      lectureRate:Number(lecture.faculty.lectureRate),
+      status,
+    });
+    console.log(penalty)
 
     if (lecture.faculty.facultyType === "LECTURE_BASED") {
+      console.log(penalty)
       const durationMinutes =
         (new Date(actualEndTime) - new Date(actualStartTime)) / (1000 * 60);
 
       const lectureHour = durationMinutes / 60;
       const baseHours = 2;
 
-      payout = Math.floor(
-        (lectureHour / baseHours) * (lecture.faculty.lectureRate || 0)
-      );
+      payout = penalty.payout;
     }
   }
 
-  return await prisma.lectureAttendance.create({
+
+  const data =  await prisma.lectureAttendance.create({
     data: {
-      lectureId,
+      // lectureId:lectureId,
+      lecture:{
+        connect:{
+          id: lectureId
+        }
+      },
       actualStartTime,
       actualEndTime,
-      penalty,
-      payout,
+      penalty:penalty.penalty,
+      payout:payout !== NaN ? payout : 0,
       status,
     },
   });
+  console.log(data)
+  return data
 };
 
 const getFacultyMonthlySummary = async (facultyId, month, year) => {
@@ -184,10 +283,7 @@ async function autoMarkLectureAttendanceForSalaryFaculty({
   facultyId,
   attendanceDate,
 }) {
-  const lectures = await getLecturesForFacultyOnDate(
-    facultyId,
-    attendanceDate
-  );
+  const lectures = await getLecturesForFacultyOnDate(facultyId, attendanceDate);
 
   for (const lecture of lectures) {
     await prisma.lectureAttendance.upsert({
@@ -214,7 +310,6 @@ async function autoMarkLectureAttendanceForSalaryFaculty({
     });
   }
 }
-
 
 // Salary Based Faculty Attendance and Salary Summary
 const markSalaryBasedFacultyAttendance = async ({
@@ -270,9 +365,7 @@ const markSalaryBasedFacultyAttendance = async ({
     }
   }
 
-
-
-  const attendance =  await prisma.facultyAttendance.upsert({
+  const attendance = await prisma.facultyAttendance.upsert({
     where: {
       facultyId_date: {
         facultyId,
@@ -280,19 +373,23 @@ const markSalaryBasedFacultyAttendance = async ({
       },
     },
     update: {
-      inTime:aInTime,
-      outTime:aOutTime,
+      inTime: aInTime,
+      outTime: aOutTime,
       isLeave,
       // workingMintues,
-      workingMinutes:workingMintues
+      workingMinutes: workingMintues,
     },
     create: {
-      facultyId,
+      faculty:{
+        connect:{
+          id:facultyId
+        }
+      },
       date: attendanceDate,
       inTime: isLeave ? null : aInTime,
       outTime: isLeave ? null : aOutTime,
       isLeave,
-      workingMinutes:workingMintues,
+      workingMinutes: workingMintues,
     },
   });
 

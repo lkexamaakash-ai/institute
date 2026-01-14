@@ -69,6 +69,42 @@ const createlectureSchedule = async (
   });
 };
 
+const getLectureByIdAndType = async(id,type) => {
+  if(type === "LECTURE_BASED"){
+    return await prisma.lectureSchedule.findMany({
+      where:{
+        facultyId:Number(id)
+      },
+      include:{
+        attendance:true,
+        subject:true
+      }
+
+    })
+  }else{
+    return await prisma.facultyAttendance.findMany({
+      where:{
+        facultyId:Number(id)
+      },
+      include:{
+        faculty:true
+      }
+    })
+  }
+}
+
+const getLecture = async(id) => {
+  return await prisma.lectureSchedule.findMany({
+    where:{
+      facultyId:Number(id)
+    },
+    include:{
+      subject: true,
+      batch:true,
+    }
+  })
+}
+
 const getLectureByBranchAndDate = async (batchId, date) => {
   const dayStart = new Date(`${date}T00:00:00`);
   const dayEnd = new Date(`${date}T23:59:59`);
@@ -156,4 +192,6 @@ module.exports = {
   getAllLecture,
   deleteLecture,
   updateLecture,
+  getLectureByIdAndType,
+  getLecture
 };

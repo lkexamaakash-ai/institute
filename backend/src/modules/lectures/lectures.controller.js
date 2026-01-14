@@ -81,6 +81,47 @@ const getByBranchAndDate = async (req, res) => {
   }
 };
 
+const getLecturesbyId = async(req,res) =>{
+  try{
+
+    const {id,type} = req.query;
+
+    const data = await lectureService.getLectureByIdAndType(id,type)
+
+    res.json({
+      message:"Data of lecture by id and type",
+      success:false,
+      data
+    })
+
+  }catch(err){
+    res.status(400).json({
+      message:err.message,
+    })
+  }
+}
+
+const getlecture = async(req,res) =>{
+  try{
+
+    const {id} = req.query;
+
+    const data = await lectureService.getLecture(id);
+
+    res.json({
+      message:"All data",
+      success:true,
+      data
+    })
+
+  }catch(err) {
+    res.status(400).json({
+      message:err.message,
+      success:true
+    })
+  }
+}
+
 const getAlllectures = async (req, res) => {
   try {
     const lectures = await lectureService.getAllLecture();
@@ -157,4 +198,6 @@ module.exports = {
   getAlllectures,
   remove,
   update,
+  getLecturesbyId,
+  getlecture
 };

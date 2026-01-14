@@ -18,8 +18,9 @@ model Branch {
 
   staffAttendances StaffAttendance[]
 
-  createdAt DateTime @default(now())
+  createdAt              DateTime                @default(now())
   // lectureSchedules LectureSchedule[]
+  historicalFacultyDatas HistoricalFacultyData[]
 }
 
 model User {
@@ -47,7 +48,8 @@ model User {
   staffAttendances   StaffAttendance[]
   facultyAttendances FacultyAttendance[]
 
-  createdAt DateTime @default(now())
+  createdAt              DateTime                @default(now())
+  historicalFacultyDatas HistoricalFacultyData[]
 }
 
 model Subject {
@@ -151,8 +153,8 @@ model FacultyAttendance {
   facultyId Int
   faculty   User @relation(fields: [facultyId], references: [id])
 
-  date           DateTime @default(now())
-  inTime         DateTime
+  date           DateTime  @default(now())
+  inTime         DateTime?
   outTime        DateTime?
   workingMinutes Int       @default(0)
   isLeave        Boolean   @default(false)
@@ -174,6 +176,7 @@ model Batch {
 
   subjects         Subject[]
   lectureSchedules LectureSchedule[]
+  historicalData   HistoricalFacultyData[]
 
   createdAt DateTime @default(now())
 
@@ -193,6 +196,39 @@ model Course {
   createdAt DateTime @default(now())
 
   @@unique([name, branchId])
+}
+
+model HistoricalFacultyData {
+  id           Int       @id @default(autoincrement())
+  userId       Int?
+  branchId     Int?
+  batchId      Int?
+  // branchName   String
+  facultyName  String?
+  date         DateTime?
+  Intime       DateTime?
+  Outtime      DateTime?
+  subject      String?
+  totalPenalty Int?
+  totalMinutes Int?
+  session      String?
+
+  user   User?   @relation(fields: [userId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+  batch  Batch?  @relation(fields: [batchId], references: [id])
+}
+
+model HistoricalStaffData {
+  id           Int      @id @default(autoincrement())
+  staffName    String?
+  branchName   String?
+  date         DateTime?
+  status       String?
+  extraHours   Int?
+  unpaid       Boolean?
+  deficitHours Int?
+  shiftStart   String?
+  shiftEnd     String?
 }
 
 enum PenaltyType {

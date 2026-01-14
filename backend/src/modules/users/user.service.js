@@ -83,12 +83,16 @@ const getAllUser = async () => {
       lectures: {
         include: {
           attendance: true,
-          subject:true,
-          batch:{
-            include:{
-              course:true
-            }
-          }
+          subject: true,
+          batch: {
+            include: {
+              course: {
+                include: {
+                  branch: true,
+                },
+              },
+            },
+          },
         },
       },
       staffAttendances: true,
@@ -106,7 +110,7 @@ const makeBrancheAdmin = async (userId, branchId) => {
     where: { id: branchId },
   });
 
-  console.log(branch)
+  console.log(branch);
   if (!branch) {
     throw new Error("Branch not found");
   }
@@ -274,27 +278,106 @@ const branchDashoard = async () => {
       faculty: true,
       subject: true,
       batch: {
-        include:{
-          course:true
-        }
+        include: {
+          course: true,
+        },
       },
       attendance: true,
     },
   });
 
   const batch = await prisma.batch.findMany({
-    include:{
-      course:true,
-      lectureSchedules:true,
-      subjects:true
-    }
-  })
+    include: {
+      course: true,
+      lectureSchedules: true,
+      subjects: true,
+    },
+  });
 
   return {
     branch,
     faculty,
     lectures,
-    batch
+    batch,
+  };
+};
+
+const userDashboard = async ({ branchId, userId }) => {
+  const branch = await prisma.branch.findMany({
+    where:{
+      id:branchId
+    },
+    include: {
+      courses: {
+        include: {
+          batches: {
+            include: {
+              lectureSchedules: {
+                include: {
+                  subject: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      users: {
+        omit: {
+          password: true,
+        },
+      },
+      staffAttendances: true,
+    },
+  });
+
+  const faculty = await prisma.user.findMany({
+    where:{
+      id:userId
+    },
+    include: {
+      facultySubjects: {
+        include: { subject: true },
+      },
+      lectures: {
+        include: { attendance: true, batch: true },
+      },
+      branch: true,
+      staffAttendances: true,
+    },
+  });
+
+  const lectures = await prisma.lectureSchedule.findMany({
+    where:{
+      facultyId:userId
+    },
+    include: {
+      faculty: true,
+      subject: true,
+      batch: {
+        include: {
+          course: true,
+        },
+      },
+      attendance: true,
+    },
+  });
+
+  // const batch = await prisma.batch.findMany({
+  //   where:{
+  //     branchId
+  //   },
+  //   include: {
+  //     course: true,
+  //     lectureSchedules: true,
+  //     subjects: true,
+  //   },
+  // });
+
+  return {
+    branch,
+    faculty,
+    lectures,
+    // batch,
   };
 };
 
@@ -307,4 +390,5 @@ module.exports = {
   branchDashoard,
   updateUser,
   deleteUser,
+  userDashboard
 };

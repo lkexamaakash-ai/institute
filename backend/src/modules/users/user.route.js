@@ -32,7 +32,7 @@ router.get(
   userController.DashboardData
 )
 
-router.get("/role/dash",protect,userController.DashboardData)
+router.get("/role/dash",protect,userController.userDashboardData)
 
 router.put(
   "/:id",

@@ -15,8 +15,12 @@ import {
 import axios from "axios";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import SelectBranchModels from "./SelectBranchModels";
 
 const ReportModels = ({ open, setOpen, user, setUser }) => {
+
+  const [oping,setOping] = useState(false)
+
   const list = [
     "Jan",
     "Feb",
@@ -122,36 +126,6 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
     window.open(whatsappURL, "_blank");
   };
 
-  const handleLectureBasedFacultySendWhatsappMsg = () => {
-    const faculty = user; // assuming user = faculty object
-
-    const subjectName = faculty?.lectures?.[0]?.subject?.name || "N/A";
-    const totalScheduled =
-      faculty?.lectures?.reduce(
-        (sum, lec) => sum + (lec?.TotalScheduled || 0),
-        0
-      ) || 0;
-
-    const conductedLectures =
-      faculty?.lectures?.reduce(
-        (sum, lec) => sum + (lec?.attendance?.length || 0),
-        0
-      ) || 0;
-
-    const remainingLectures = totalScheduled - conductedLectures;
-    const lectureRate = faculty?.lectureRate || 0;
-    const totalPayout = conductedLectures * lectureRate;
-
-    const message = `
-    Dear *${faculty.name}*, In ${faculty?.lectures?.[0]?.batch?.course?.name} Course ${faculty?.lectures?.[0]?.batch?.name} Batch For *${subjectName}*, *${totalScheduled}* ${totalScheduled > 1? "lectures":"lecture"} were allocated. As of ${list[currentMon]}, *${conductedLectures}* have been completed, leaving ${remainingLectures} lectures pending at ${faculty?.branch?.name} Branch. Kindly ensure the pending lectures are completed within the given timeline so that the syllabus remains on track. Thank you for your cooperation. Best regards, *Academic Coordinator*
-  `.trim();
-
-    const whatsappURL = `https://wa.me/${
-      user.phoneNumber
-    }/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappURL, "_blank");
-  };
-
   return (
     <>
       {open && (
@@ -246,7 +220,7 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
               ))}
             <div className="w-full justify-center items-center">
               <Button
-                onClick={user?.role === "STAFF"? handleSendWhatsappMsg : handleLectureBasedFacultySendWhatsappMsg }
+                onClick={user?.role === "STAFF"? handleSendWhatsappMsg : ()=> setOping(true)}
                 className={`w-full mt-5 cursor-pointer bg-green-500 hover:bg-green-600 mx-auto`}
               >
                 <Image
@@ -262,6 +236,7 @@ const ReportModels = ({ open, setOpen, user, setUser }) => {
           </div>
         </div>
       )}
+      <SelectBranchModels list={list} currentMon={currentMon} open={oping} setOpen={setOping} userdata={user} />
     </>
   );
 };

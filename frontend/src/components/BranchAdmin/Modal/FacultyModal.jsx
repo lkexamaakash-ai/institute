@@ -118,7 +118,7 @@ const FacultyModal = ({ open, setOpen }) => {
   useEffect(() => {
     const loadData = async () => {
       const findplanned = subject.find(
-        (item) => item.subjectId === subjectId.id
+        (item) => item.subjectId === subjectId.subject.id
       );
       console.log(findplanned);
       setLect(findplanned);
@@ -132,48 +132,48 @@ const FacultyModal = ({ open, setOpen }) => {
 
   useEffect(() => {
     if (facultyType === "SALARY_BASED") {
-      setStartTime((facultyId.shiftStartTime));
-      setEndTime((facultyId.shiftEndTime));
+      setStartTime(facultyId.shiftStartTime);
+      setEndTime(facultyId.shiftEndTime);
     }
   }, [facultyType]);
 
-  const calculateFacultyPenaltyUI = ({
-    plannedStart,
-    plannedEnd,
-    actualStart,
-    actualEnd,
-    lectureAmount,
-  }) => {
-    let isLate = false;
-    let isEarly = false;
+  // const calculateFacultyPenaltyUI = ({
+  //   plannedStart,
+  //   plannedEnd,
+  //   actualStart,
+  //   actualEnd,
+  //   lectureAmount,
+  // }) => {
+  //   let isLate = false;
+  //   let isEarly = false;
 
-    if (actualStart - plannedStart > FIFTEEN_MIN) {
-      isLate = true;
-    }
+  //   if (actualStart - plannedStart > FIFTEEN_MIN) {
+  //     isLate = true;
+  //   }
 
-    if (plannedEnd - actualEnd > FIFTEEN_MIN) {
-      isEarly = true;
-    }
+  //   if (plannedEnd - actualEnd > FIFTEEN_MIN) {
+  //     isEarly = true;
+  //   }
 
-    let penalty = "NONE";
+  //   let penalty = "NONE";
 
-    if (isLate && isEarly) penalty = "BOTH";
-    else if (isLate) penalty = "LATE_START";
-    else if (isEarly) penalty = "EARLY_END";
+  //   if (isLate && isEarly) penalty = "BOTH";
+  //   else if (isLate) penalty = "LATE_START";
+  //   else if (isEarly) penalty = "EARLY_END";
 
-    return {
-      penalty,
-      payableAmount: lectureAmount,
-      message:
-        penalty === "NONE"
-          ? "No Penalty"
-          : penalty === "LATE_START"
-          ? "Late Start Penalty"
-          : penalty === "EARLY_END"
-          ? "Early End Penalty"
-          : "Late Start + Early End Penalty",
-    };
-  };
+  //   return {
+  //     penalty,
+  //     payableAmount: lectureAmount,
+  //     message:
+  //       penalty === "NONE"
+  //         ? "No Penalty"
+  //         : penalty === "LATE_START"
+  //         ? "Late Start Penalty"
+  //         : penalty === "EARLY_END"
+  //         ? "Early End Penalty"
+  //         : "Late Start + Early End Penalty",
+  //   };
+  // };
 
   const [cancelled, setCancelled] = useState(false);
 
@@ -198,7 +198,62 @@ const FacultyModal = ({ open, setOpen }) => {
   //   setPenaltyPreview(result);
   // }, [startTime, endTime, actualIn, actualOut]);
 
+  function applyStatusOnPayout(calculatedPayout, status) {
+    if (status === "MISSED") return 0;
+    if (status === "CANCELLED") return calculatedPayout / 2;
+    return calculatedPayout; // CONDUCTED
+  }
+
+  const LECTURE_MINUTES = 120;
+
+  function calculateLectureBasedFaculty({
+    plannedStart,
+    plannedEnd,
+    actualStart,
+    actualEnd,
+    lectureRate,
+  }) {
+    const FIFTEEN_MIN = 15 * 60 * 1000;
+
+    let isLate = actualStart - plannedStart > FIFTEEN_MIN;
+    let isEarly = plannedEnd - actualEnd > FIFTEEN_MIN;
+
+    let penalty = "NONE";
+    if (isLate && isEarly) penalty = "BOTH";
+    else if (isLate) penalty = "LATE_START";
+    else if (isEarly) penalty = "EARLY_END";
+
+    const workedMinutes = Math.max(
+      0,
+      Math.floor((actualEnd - actualStart) / (1000 * 60))
+    );
+
+    const lectureEquivalent = workedMinutes / LECTURE_MINUTES;
+    console.log(lectureEquivalent);
+
+    const calculatedPayout =
+      lectureEquivalent > 1
+        ? Number((lectureEquivalent * lectureRate).toFixed(2))
+        : lectureRate;
+
+    return {
+      penalty,
+      workedMinutes,
+      lectureEquivalent: Number(lectureEquivalent.toFixed(2)),
+      calculatedPayout,
+      message:
+        penalty === "NONE"
+          ? "On Time"
+          : penalty === "LATE_START"
+          ? "Late Start"
+          : penalty === "EARLY_END"
+          ? "Early End"
+          : "Late + Early",
+    };
+  }
+
   useEffect(() => {
+    console.log(subjectId)
     if (
       !subjectId.startTime ||
       !subjectId.endTime ||
@@ -209,6 +264,7 @@ const FacultyModal = ({ open, setOpen }) => {
       return;
 
     const date = subjectId.startTime.split("T")[0];
+    console.log(subjectId)
 
     const result = calculateLectureBasedFaculty({
       plannedStart: new Date(subjectId.startTime),
@@ -220,6 +276,7 @@ const FacultyModal = ({ open, setOpen }) => {
 
     const finalPayout = applyStatusOnPayout(result.calculatedPayout, status);
 
+    console.log(result);
     setPenaltyPreview(result);
     setPayout(finalPayout);
   }, [subjectId, actualIn, actualOut, status]);
@@ -284,10 +341,10 @@ const FacultyModal = ({ open, setOpen }) => {
       const { data } = axios.post(
         `${mainRoute}/api/attendance/faculty/attendance/mark`,
         {
-          facultyId: selectFaculty.id,
+          facultyId: facultyId.id,
           date: today,
-          inTime: inTime,
-          outTime: outTime,
+          inTime: `${today}T${actualIn}`,
+          outTime: `${today}T${actualOut}`,
           isLeave: status,
         },
         {
@@ -390,7 +447,7 @@ const FacultyModal = ({ open, setOpen }) => {
                       </SelectTrigger>
                       <SelectContent>
                         {subject.map((item, i) => (
-                          <SelectItem value={item.subject} key={i}>
+                          <SelectItem value={item} key={i}>
                             {item.subject.name}
                           </SelectItem>
                         ))}
@@ -488,7 +545,7 @@ const FacultyModal = ({ open, setOpen }) => {
                 >
                   Cancel
                 </Button>
-                <Button onClick={markAttendance} className={`w-1/2`}>
+                <Button onClick={facultyId.facultyType === "LECTURE_BASED"?markAttendance:markSalaryBasedAttendance} className={`w-1/2`}>
                   Save
                 </Button>
               </div>

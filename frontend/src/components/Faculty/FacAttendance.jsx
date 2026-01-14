@@ -9,6 +9,8 @@ import {
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { useManagement } from "@/context/ManagementContext";
+import axios from "axios";
+import { mainRoute } from "../apiroute";
 
 const FacAttendance = () => {
   const list = ["latest", "oldest"];
@@ -20,12 +22,14 @@ const FacAttendance = () => {
       year: "numeric",
     });
 
-  const formatTime = (iso) =>
-    new Date(iso).toLocaleTimeString("en-IN", {
+  const formatTime = (iso) => {
+    if (iso === "") return;
+    return new Date(iso).toLocaleTimeString("en-IN", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
+  };
 
   const getStatus = (lecture) => {
     const attendance = lecture.attendance?.[0];
@@ -39,40 +43,86 @@ const FacAttendance = () => {
     return "Planned";
   };
 
+  // const mapLecturesToUI = (lectures) => {
+  //   return (
+  //     lectures
+  //       // 👉 sirf wahi jisme attendance mark hui ho (agar chaho)
+  //       .filter((lec) => lec.attendance && lec.attendance.length > 0)
+
+  //       // 👉 latest first
+  //       .sort(
+  //         (a, b) =>
+  //           new Date(b.attendance[0].actualStartTime) -
+  //           new Date(a.attendance[0].actualStartTime)
+  //       )
+
+  //       // 👉 last 5
+  //       .slice(0, 5)
+
+  //       .map((lec) => {
+  //         const attendance = lec.attendance[0];
+
+  //         return {
+  //           date: formatDate(lec.StartDate),
+  //           subject: lec.subject?.name || "-",
+  //           plannedTime: `${formatTime(lec.startTime)} – ${formatTime(
+  //             lec.endTime
+  //           )}`,
+  //           actualTime: attendance
+  //             ? `${formatTime(attendance.actualStartTime)} – ${formatTime(
+  //                 attendance.actualEndTime
+  //               )}`
+  //             : "-",
+  //           status: getStatus(lec),
+  //           penalty: attendance?.penalty || "NONE",
+  //         };
+  //       })
+  //   );
+  // };
+
   const mapLecturesToUI = (lectures) => {
     return (
       lectures
-        // 👉 sirf wahi jisme attendance mark hui ho (agar chaho)
-        .filter((lec) => lec.attendance && lec.attendance.length > 0)
-
-        // 👉 latest first
-        .sort(
-          (a, b) =>
-            new Date(b.attendance[0].actualStartTime) -
-            new Date(a.attendance[0].actualStartTime)
+        .filter(
+          (lec) => Array.isArray(lec.attendance) && lec.attendance.length > 0
         )
 
-        // 👉 last 5
+        // 🔥 flatten lectures → attendance rows
+        .flatMap((lec) =>
+          lec.attendance.map((att) => {
+            const now = new Date();
+
+            let status = "Planned";
+            if (att.actualStartTime && att.actualEndTime) {
+              status = "Conducted";
+            } else if (new Date(lec.endTime) < now) {
+              status = "Missed";
+            }
+
+            return {
+              date: formatDate(att.date || lec.StartDate),
+              subject: lec.subject?.name || "-",
+              plannedTime: `${formatTime(lec.startTime)} – ${formatTime(
+                lec.endTime
+              )}`,
+              actualTime:
+                att.actualStartTime && att.actualEndTime
+                  ? `${formatTime(att.actualStartTime)} – ${formatTime(
+                      att.actualEndTime
+                    )}`
+                  : "-",
+              status,
+              penalty: att.penalty || "NONE",
+              sortTime: att.actualStartTime || att.date, // for sorting
+            };
+          })
+        )
+
+        // 🔥 latest first
+        .sort((a, b) => new Date(b.sortTime) - new Date(a.sortTime))
+
+        // 🔥 last 5 records
         .slice(0, 5)
-
-        .map((lec) => {
-          const attendance = lec.attendance[0];
-
-          return {
-            date: formatDate(lec.StartDate),
-            subject: lec.subject?.name || "-",
-            plannedTime: `${formatTime(lec.startTime)} – ${formatTime(
-              lec.endTime
-            )}`,
-            actualTime: attendance
-              ? `${formatTime(attendance.actualStartTime)} – ${formatTime(
-                  attendance.actualEndTime
-                )}`
-              : "-",
-            status: getStatus(lec),
-            penalty: attendance?.penalty || "NONE",
-          };
-        })
     );
   };
 
@@ -84,6 +134,8 @@ const FacAttendance = () => {
     "Status",
     "Penalty",
   ];
+
+  const lecHeader = ["Date", "Planned Time", "InTime", "OutTime", "Status"];
 
   // const myLecturesData = [
   //   {
@@ -120,29 +172,44 @@ const FacAttendance = () => {
   //   },
   // ];
 
-
-  const {fetchLecture} = useManagement()
-  const [serverdata, setServerdata] = useState([])
+  const { fetchLecture } = useManagement();
+  const [serverdata, setServerdata] = useState([]);
   const [myLecturesData, setMyLecturesData] = useState([]);
+  const [typ, setType] = useState("LECTURE_BASED");
+  const [lecData, setLecData] = useState([]);
 
   useEffect(() => {
     const tok = JSON.parse(localStorage.getItem("user"));
     const id = tok.data.user.id;
+    const type = tok.data.user.type;
+    setType(type);
     console.log(tok.data.user);
     const loadData = async () => {
-      const data = await fetchLecture();
+      const { data } = await axios.get(
+        `${mainRoute}/api/lecture/lectureatt?id=${id}&type=${type}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${tok.data.token}`,
+          },
+        }
+      );
 
-      const filterData = data.filter((user) => user.facultyId === id);
-      console.log(filterData);
-      setServerdata(filterData);
+      console.log(data.data);
+
+      setServerdata(data.data);
     };
     loadData();
   }, []);
 
   useEffect(() => {
-    const uiData = mapLecturesToUI(serverdata);
-    console.log(uiData)
-    setMyLecturesData(uiData);
+    if (typ === "LECTURE_BASED") {
+      const uiData = mapLecturesToUI(serverdata);
+      console.log(uiData);
+      setMyLecturesData(uiData);
+    } else {
+      setLecData(serverdata);
+    }
   }, [serverdata]);
 
   return (
@@ -168,11 +235,15 @@ const FacAttendance = () => {
         </div> */}
 
         {/* data */}
-        <div className="w-[98%]  h-full overflow-auto xl:overflow-x-hidden">
-          <ul className="grid grid-cols-[100px_180px_260px_220px_140px_140px] xl:grid-cols-6 text-center border-b p-2 font-semibold">
-            {myLectureHeaders.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
+        <div className="w-[98%]  h-full items-center overflow-auto xl:overflow-x-hidden">
+          <ul
+            className={`grid grid-cols-[100px_180px_260px_220px_140px_140px] ${
+              typ === "LECTURE_BASED" ? `xl:grid-cols-6` : `xl:grid-cols-5`
+            } text-center border-b p-2 font-semibold`}
+          >
+            {typ === "LECTURE_BASED"
+              ? myLectureHeaders.map((item, i) => <li key={i}>{item}</li>)
+              : lecHeader.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
 
           {/* {myLecturesData.map((item, i) => (
@@ -186,27 +257,57 @@ const FacAttendance = () => {
             </ul>
           ))} */}
 
-          {myLecturesData.map((item, i) => (
-            <ul key={i} className="grid grid-cols-[100px_180px_260px_220px_140px_140px] xl:grid-cols-6 text-center border-b p-2">
-              <li>{item.date}</li>
-              <li>{item.subject}</li>
-              <li>{item.plannedTime}</li>
-              <li>{item.actualTime}</li>
-              <li
-                className={
-                  item.status === "Conducted"
-                    ? "text-green-600"
-                    : item.status === "Missed"
-                    ? "text-red-600"
-                    : "text-yellow-600"
-                }
+          {myLecturesData.length > 0 &&
+            myLecturesData.map((item, i) => (
+              <ul
+                key={i}
+                className={`grid grid-cols-[100px_180px_260px_220px_140px_140px] ${
+                  typ === "LECTURE_BASED" ? `xl:grid-cols-6` : `xl:grid-cols-5`
+                } text-center border-b p-2`}
               >
-                {item.status}
-              </li>
-              <li>{item.penalty}</li>
-            </ul>
-          ))}
-          
+                <li>{item.date}</li>
+                {typ === "LECTURE_BASED" && <li>{item.subject}</li>}
+                <li>{item.plannedTime}</li>
+                <li>{item.actualTime}</li>
+                <li
+                  className={
+                    item.status === "Conducted"
+                      ? "text-green-600"
+                      : item.status === "Missed"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                  }
+                >
+                  {item.status}
+                </li>
+                <li>{item.penalty}</li>
+              </ul>
+            ))}
+
+          {lecData.length > 0 &&
+            lecData.map((item, i) => (
+              <ul
+                key={i}
+                className={`grid grid-cols-[100px_180px_260px_220px_140px_140px] ${
+                  typ === "LECTURE_BASED" ? `xl:grid-cols-6` : `xl:grid-cols-5`
+                } text-center border-b p-2`}
+              >
+                <li>{formatDate(item.date)}</li>
+                <li>{`${formatTime(item.faculty.shiftStartTime)}-${formatTime(
+                  item.faculty.shiftEndTime
+                )}`}</li>
+                <li>{formatTime(item.inTime || "") || "-"}</li>
+                <li>{formatTime(item.outTime || "") || "-"}</li>
+                <li
+                  className={
+                    !item.isLeave ? "text-green-600" : "text-red-600"
+                  }
+                >
+                  {item.isLeave ? "On Leave" : "Present"}
+                </li>
+                <li>{item.penalty}</li>
+              </ul>
+            ))}
         </div>
       </div>
     </>

@@ -37,6 +37,7 @@ const loginUser = async (phoneNumber, password) => {
       role: user.role,
       branchId: user.branchId,
       branch: user.branch,
+      type:user.facultyType
     },
   };
 };

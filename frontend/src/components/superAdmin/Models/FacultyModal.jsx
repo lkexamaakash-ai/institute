@@ -361,6 +361,7 @@ const FacultyModal = ({ open, setOpen }) => {
     try {
       let tok = JSON.parse(localStorage.getItem("user")).data.token;
       let today = new Date();
+      alert(today)
 
       const { data } = axios.post(
         `${mainRoute}/api/attendance/faculty/attendance/mark`,

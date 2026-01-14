@@ -9,6 +9,7 @@ const markAttendance = async (req, res) => {
   try {
     const { lectureId, actualStartTime, actualEndTime, payout, status } =
       req.body;
+      
 
     const record = await markLectureAttendance({
       lectureId: Number(lectureId),

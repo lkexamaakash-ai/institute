@@ -10,6 +10,8 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { useManagement } from "@/context/ManagementContext";
+import axios from "axios";
+import { mainRoute } from "../apiroute";
 
 const FacLecture = () => {
   // const subject = ["Maths", "Physics", "Chemistry"];
@@ -82,10 +84,14 @@ const [myLecturesData,setLectureData] = useState([])
     const id = tok.data.user.id
     console.log(tok.data.user)
     const loadData = async() =>{
-      const data = await fetchLecture();
+      const {data} = await axios.get(`${mainRoute}/api/lecture/lec?id=${id}`,{
+        headers:{
+          "Content-Type":"application/json",
+          "Authorization":`Bearer ${tok.data.token}`
+        }
+      })
 
-
-      const filterData = data.filter((user) => user.facultyId === id)
+      const filterData = data.data
       console.log(filterData)
       setLectureData(filterData)
 
@@ -130,7 +136,7 @@ const [myLecturesData,setLectureData] = useState([])
             myLecturesData.map((item,i)=>(
                 <ul key={i} className="grid grid-cols-[100px_180px_260px_220px_140px_140px] xl:grid-cols-6 text-center border-b p-2" >
                     <li>{i + 1}</li>
-                    <li>{item.subject.name}</li>
+                    <li>{item.subject?.name}</li>
                     <li>{formatTime(item.startTime)}</li>
                     <li>{formatTime(item.endTime)}</li>
                     <li>{formatDate(item.StartDate)}</li>

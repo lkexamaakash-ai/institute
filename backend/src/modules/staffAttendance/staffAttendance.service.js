@@ -104,11 +104,11 @@ function calculateStaffAttendance({
     Math.floor((actualInTime - shiftStartTime) / (1000 * 60))
   );
 
-  const isLate = lateMinutes > GRACE_MINUTES;
-  const fixedPenalty = (isLate || shortfallMinutes) ? FIXED_PENALTY : 0;
-
   // -------- SHORTFALL --------
   const shortfallMinutes = Math.max(0, requiredMinutes - actualWorkedMinutes);
+
+  const isLate = lateMinutes > GRACE_MINUTES;
+  const fixedPenalty = isLate || shortfallMinutes ? FIXED_PENALTY : 0;
 
   let extraPenalty = 0;
 
@@ -121,7 +121,8 @@ function calculateStaffAttendance({
   const extraMinutes = Math.max(0, actualWorkedMinutes - requiredMinutes);
 
   const overtimeMinutes = Math.floor(extraMinutes);
-  const overtimePay = overtimeMinutes >= 30 ? Math.floor((overtimeMinutes) * perMinuteRate) : 0;
+  const overtimePay =
+    overtimeMinutes >= 30 ? Math.floor(overtimeMinutes * perMinuteRate) : 0;
 
   return {
     lateMinutes,
@@ -166,12 +167,21 @@ const markStaffAttendance = async ({
     workingMinutesPerDay: staff.workingMinutesPerDay,
   });
 
+  // let date1 = new Date();
+  // let date = new Date(date1.setHours(0, 0, 0, 0));
+
+  let date = new Date();
+  console.log(date);
+
+  date.setUTCHours(0, 0, 0, 0);
+
+  console.log(date);
 
   return await prisma.staffAttendance.create({
     data: {
       staffId,
       branchId,
-      date: new Date(shiftStartTime.setHours(0, 0, 0, 0)),
+      date,
       shiftStartTime,
       shiftEndTime,
       actualInTime,
@@ -225,7 +235,7 @@ const getStaffMonthlySalarySummary = async (staffId, month, year) => {
     },
   });
 
-  console.log(attendance)
+  console.log(attendance);
 
   let fixedLatePenalties = 0;
   let totalExtaPenalties = 0;

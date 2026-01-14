@@ -6,18 +6,6 @@ import Image from "next/image";
 import { mainRoute } from "../apiroute";
 
 const StaffMain = () => {
-  const todaysLectures = [
-    {
-      subject: "Mathematics",
-      time: "10:00 – 11:00",
-      status: "Conducted",
-    },
-    {
-      subject: "Physics",
-      time: "11:30 – 12:30",
-      status: "Upcoming",
-    },
-  ];
 
   // Helper Function
   const getTodayDateString = () => {
@@ -67,7 +55,7 @@ const StaffMain = () => {
 
     const loadData = async () => {
       const { data } = await axios.get(
-        `${mainRoute}/api/users/role/dash`,
+        `${mainRoute}/api/users/role/dash?userId=${tokn.data.user.id}&branchId=${tokn.data.user.branch.id}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -147,28 +135,6 @@ const StaffMain = () => {
     "December",
   ];
 
-  const handleSendWhatsappMsg = () => {
-    const message = `
-*Staff Monthly Attendance Summary*
-
-Name: ${staffData.name}
-Branch: *${staffData.branch.name}*
-Month: ${monlist[new Date().getMonth()]}
-
-Total Overtime: ${overtime} mins
-Overtime Pay: ₹${todayAtt.overtimePay}
-
-Days Present: ${staffData?.staffAttendances?.length}
-Late Days: ${staffData?.staffAttendances?.filter((att) => att.isLate).length}
-  `.trim();
-
-  // 918160250887
-
-    const whatsappURL = `https://wa.me/918160250887/?text=${encodeURIComponent(
-      message
-    )}`;
-    window.open(whatsappURL, "_blank");
-  };
 
   return (
     <>
@@ -176,19 +142,7 @@ Late Days: ${staffData?.staffAttendances?.filter((att) => att.isLate).length}
 
         <div className="px-5 py-2 flex justify-between shrink-0">
           <h1 className="font-bold text-2xl">Welcome 👋</h1>
-          <Button
-            onClick={handleSendWhatsappMsg}
-            className={` w-[30%] xl:w-[10%] cursor-pointer bg-green-500 hover:bg-green-600`}
-          >
-            <Image
-              src={"/whatsapp.png"}
-              alt="whatsapp"
-              height={100}
-              width={100}
-              className="h-5 w-5 "
-            />
-            Whatsapp
-          </Button>
+          
         </div>
 
         <div className="w-full xl:w-[98%] flex-1 mx-auto flex flex-col gap-4 overflow-auto xl:overflow-hidden px-1">
@@ -241,7 +195,7 @@ Late Days: ${staffData?.staffAttendances?.filter((att) => att.isLate).length}
 
             <div className="bg-gray-200 w-full h-full  ">
               <h1>OverTime(This month)</h1>
-              <p>{overtime} min</p>
+              <p>{overtime > 60 ? `${(overtime/60).toFixed(2)}Hrs` : `${overtime}min`} </p>
             </div>
 
             <div className="bg-gray-200 w-full h-full  ">
